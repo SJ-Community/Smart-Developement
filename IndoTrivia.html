@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>India Trivia — 10 of 100</title>
+<style>
+  :root{
+    --bg1:#e6f7ff; /* light blue palette */
+    --bg2:#f0fbff;
+    --card:#ffffff;
+    --accent:#2b9edb;
+    --success:#28a745;
+    --danger:#e74c3c;
+    --muted:#666;
+    --option-bg:#f7fbff;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(135deg,var(--bg1),var(--bg2));
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+
+  .container{
+    width:100%;
+    max-width:760px;
+    background:var(--card);
+    border-radius:14px;
+    box-shadow:0 10px 30px rgba(20,40,80,0.08);
+    padding:22px;
+    overflow:hidden;
+  }
+
+  header{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    margin-bottom:12px;
+  }
+  .logo{
+    width:56px;height:56px;border-radius:10px;
+    background:linear-gradient(135deg,var(--accent),#6fd0ff);
+    display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;
+    box-shadow:0 6px 18px rgba(43,158,219,0.18);
+  }
+  h1{margin:0;font-size:1.15rem}
+  p.lead{margin:0;color:var(--muted);font-size:0.92rem;}
+
+  .meta{
+    display:flex;
+    gap:10px;
+    margin-top:12px;
+    align-items:center;
+  }
+  .chip{
+    background:var(--option-bg);
+    padding:6px 10px;border-radius:999px;font-size:0.88rem;color:var(--muted);
+    border:1px solid rgba(43,158,219,0.06);
+  }
+
+  .card{
+    margin-top:18px;
+    padding:18px;
+    border-radius:12px;
+    background: linear-gradient(180deg, rgba(250,250,255,1), rgba(245,252,255,1));
+    border:1px solid rgba(43,158,219,0.06);
+  }
+
+  .question{
+    font-size:1.1rem;
+    margin-bottom:14px;
+    color:#0f2b3a;
+    min-height:46px;
+  }
+
+  .options{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  @media (max-width:560px){ .options{ grid-template-columns:1fr } }
+
+  .opt{
+    padding:12px 10px;border-radius:10px;background:linear-gradient(180deg,#ffffff, #f6fdff);
+    border:2px solid rgba(10,30,50,0.06);
+    cursor:pointer;transition:transform .12s ease, box-shadow .12s ease;
+    display:flex;align-items:center;gap:10px;
+    box-shadow:0 3px 10px rgba(10,30,50,0.04);
+  }
+  .opt:hover{ transform:translateY(-3px); box-shadow:0 8px 20px rgba(10,30,50,0.06) }
+  .opt.disabled{ cursor:default; opacity:0.98; transform:none; box-shadow: none; }
+
+  .opt .letter{
+    width:34px;height:34px;border-radius:8px;background:rgba(43,158,219,0.06);display:flex;align-items:center;justify-content:center;
+    font-weight:600;color:var(--accent);flex-shrink:0;
+  }
+  .opt .text{font-size:0.97rem;color:#07323f}
+
+  /* states */
+  .opt.correct{
+    background: linear-gradient(180deg, #e6f9ee, #e6fbf0);
+    border-color: rgba(40,167,69,0.25);
+    box-shadow: 0 6px 18px rgba(40,167,69,0.08);
+  }
+  .opt.wrong{
+    background: linear-gradient(180deg, #fff1f2, #fff3f4);
+    border-color: rgba(231,76,60,0.18);
+    box-shadow: 0 6px 18px rgba(231,76,60,0.06);
+  }
+
+  .fact{
+    margin-top:14px;font-size:0.95rem;color:var(--muted);min-height:36px;
+  }
+
+  .controls{
+    display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:16px;
+  }
+  .next-btn{
+    background:var(--accent);color:white;padding:10px 14px;border-radius:10px;border:none;font-weight:600;cursor:pointer;
+    box-shadow:0 8px 18px rgba(43,158,219,0.14);
+  }
+  .next-btn:disabled{opacity:0.6;cursor:default;box-shadow:none}
+
+  .progress{
+    font-size:0.95rem;color:var(--muted);
+  }
+
+  /* Result screen */
+  .result-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px}
+  .svg-tick{width:86px;height:86px}
+  /* animate SVG stroke */
+  .circle-path{ stroke-dasharray: 283; stroke-dashoffset: 283; animation: drawCircle 1s ease forwards; }
+  .check-path{ stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawCheck 0.6s ease forwards 0.4s; }
+
+  @keyframes drawCircle{
+    to{ stroke-dashoffset: 0; }
+  }
+  @keyframes drawCheck{
+    to{ stroke-dashoffset: 0; }
+  }
+
+  .score{
+    font-size:1.25rem;font-weight:700;color:#04323a;
+  }
+  .sub{color:var(--muted);font-size:0.95rem}
+  .restart{margin-top:10px;padding:10px 14px;border-radius:10px;border:2px solid var(--accent);background:transparent;color:var(--accent);font-weight:600;cursor:pointer}
+
+
+  /* small helper */
+  .hidden{ display:none!important }
+</style>
+</head>
+<body>
+  <div class="container" role="main">
+    <header>
+      <div class="logo">IN</div>
+      <div>
+        <h1>India Trivia</h1>
+        <p class="lead">By SJ-Community</p>
+        <div class="meta">
+          <div class="chip" id="qcount">Question 1 / 10</div>
+          <div class="chip" id="scorechip">Score: 0</div>
+        </div>
+      </div>
+    </header>
+
+    <section class="card" id="quizCard" aria-live="polite">
+      <!-- question + options injected here -->
+      <div id="questionArea"></div>
+      <div class="fact" id="factArea"></div>
+
+      <div class="controls" id="controlsRow">
+        <div class="progress" id="progressText">Pick an answer</div>
+        <button class="next-btn" id="nextBtn" disabled>Next</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="resultCard" aria-live="polite">
+      <div class="result-wrap" id="resultWrap">
+        <!-- svg tick -->
+        <svg class="svg-tick" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="#28a745" stroke-width="6" class="circle-path" />
+          <path d="M30 52 L44 66 L72 36" fill="none" stroke="#28a745" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" class="check-path"/>
+        </svg>
+
+        <div class="score" id="finalScore">Your Score: 0 / 10</div>
+        <div class="sub" id="finalText">Well done Better luck next time</div>
+        <button class="restart" id="restartBtn">Play Again</button>
+      </div>
+    </section>
+  </div>
+
+<script>
+/* --------------------- Questions (100) ---------------------
+   Each entry: { q: "...", options: [...], answer: <index>, fact: "..." }
+   You can edit, add or remove items as you like.
+----------------------------------------------------------------*/
+const allQuestions = [
+{q:"What is the capital city of India?", options:["Mumbai","New Delhi","Kolkata","Chennai"], answer:1, fact:"New Delhi is the capital of India since 1911 (officially designed and inaugurated later)."},
+{q:"On which date does India celebrate Independence Day?", options:["January 26","August 15","October 2","November 14"], answer:1, fact:"India gained independence from British rule on August 15, 1947."},
+{q:"What is the national animal of India?", options:["Elephant","Lion","Bengal Tiger","Peacock"], answer:2, fact:"The Bengal tiger is the national animal of India."},
+{q:"Which is the national bird of India?", options:["Indian Roller","Peacock","Sparrow","Kingfisher"], answer:1, fact:"The Indian peafowl (peacock) is the national bird of India."},
+{q:"Which river is considered the holiest in India and is central to many religious practices?", options:["Yamuna","Ganga","Narmada","Godavari"], answer:1, fact:"The Ganga (Ganges) is considered holy in Hinduism and is central to many rituals."},
+{q:"Which classical dance form originated in the state of Tamil Nadu?", options:["Kathak","Bharatanatyam","Kathakali","Odissi"], answer:1, fact:"Bharatanatyam originated in Tamil Nadu and is one of India's oldest classical dances."},
+{q:"Which Indian monument is known as the 'Symbol of Love'?", options:["Qutub Minar","Gateway of India","Hawa Mahal","Taj Mahal"], answer:3, fact:"The Taj Mahal in Agra was built by Mughal emperor Shah Jahan as a mausoleum for his wife."},
+{q:"Which is the largest state in India by area?", options:["Madhya Pradesh","Rajasthan","Maharashtra","Uttar Pradesh"], answer:1, fact:"Rajasthan is the largest Indian state by area."},
+{q:"Which Himalayan peak is the highest within India’s territory?", options:["Mount Everest","Kangchenjunga","Nanda Devi","Annapurna"], answer:1, fact:"Kangchenjunga (8,586 m) is the highest peak located on the India–Nepal border and highest within India."},
+{q:"Which city is the financial capital of India?", options:["Chennai","Mumbai","Bengaluru","Hyderabad"], answer:1, fact:"Mumbai is widely regarded as India's financial and commercial capital."},
+{q:"Which language is recognized as the most widely spoken first language in India?", options:["Hindi","Bengali","Telugu","Marathi"], answer:0, fact:"Hindi has the largest number of native speakers in India."},
+{q:"What is the currency of India?", options:["Dollar","Rupee","Euro","Pound"], answer:1, fact:"The official currency of India is the Indian Rupee (INR)."},
+{q:"Which ocean borders India to the south?", options:["Atlantic","Pacific","Indian","Arctic"], answer:2, fact:"India is bordered by the Indian Ocean to the south."},
+{q:"Which festival is known as the Festival of Lights in India?", options:["Holi","Diwali","Pongal","Baisakhi"], answer:1, fact:"Diwali is celebrated as the Festival of Lights across India."},
+{q:"Who wrote the Indian national anthem 'Jana Gana Mana'?", options:["Bankim Chandra Chatterjee","Rabindranath Tagore","Sarojini Naidu","Subhas Chandra Bose"], answer:1, fact:"Rabindranath Tagore composed the national anthem 'Jana Gana Mana'."},
+{q:"Which dance-drama form originates from Kerala and uses elaborate makeup and costumes?", options:["Bharatanatyam","Kathak","Kathakali","Manipuri"], answer:2, fact:"Kathakali originates in Kerala and is known for rich costumes and face makeup."},
+{q:"Which Indian city is called the 'Silicon Valley of India'?", options:["Pune","Bengaluru","Mumbai","Kolkata"], answer:1, fact:"Bengaluru is a major tech hub and is frequently called the 'Silicon Valley of India'."},
+{q:"Which is the longest river that flows entirely within India?", options:["Ganga","Godavari","Krishna","Brahmaputra"], answer:1, fact:"The Godavari is the longest river that flows entirely within India."},
+{q:"Which monument in Delhi marks the start of the Mughal architectural era in India?", options:["India Gate","Red Fort","Qutub Minar","Humayun's Tomb"], answer:2, fact:"Qutub Minar is a prominent early example of Indo-Islamic architecture in Delhi."},
+{q:"What is the national flower of India?", options:["Rose","Lotus","Jasmine","Marigold"], answer:1, fact:"The lotus is the national flower of India."},
+{q:"Which national park is famous for conservation of the one-horned rhinoceros?", options:["Kaziranga","Jim Corbett","Gir","Sundarbans"], answer:0, fact:"Kaziranga National Park in Assam is renowned for its one-horned rhinoceros population."},
+{q:"Which state is the largest producer of tea in India (historically known for tea gardens)?", options:["Assam","Kerala","Karnataka","Gujarat"], answer:0, fact:"Assam is famous for its vast tea gardens and is a leading tea producer."},
+{q:"Which Indian state has the city of Varanasi, one of the world's oldest continuously inhabited cities?", options:["Uttar Pradesh","Bihar","Madhya Pradesh","Rajasthan"], answer:0, fact:"Varanasi (Kashi) in Uttar Pradesh is one of the oldest living cities in the world."},
+{q:"The Indian constitution came into effect on which date (Republic Day)?", options:["August 15, 1947","January 26, 1950","October 2, 1950","November 26, 1949"], answer:1, fact:"The Constitution of India came into effect on January 26, 1950 — celebrated as Republic Day."},
+{q:"Which sea lies to the west of India?", options:["Arabian Sea","Bay of Bengal","Andaman Sea","Laccadive Sea"], answer:0, fact:"The Arabian Sea lies to the west of India."},
+{q:"Which Indian state is known for the Mehrangarh Fort and the city of Jodhpur (the 'Blue City')?", options:["Gujarat","Rajasthan","Madhya Pradesh","Haryana"], answer:1, fact:"Jodhpur in Rajasthan is nicknamed the 'Blue City' and is home to Mehrangarh Fort."},
+{q:"Which is the national aquatic animal of India?", options:["Dolphin","Shark","Gangetic Dolphin","Whale"], answer:2, fact:"The Gangetic river dolphin is the national aquatic animal of India."},
+{q:"Which famous 17th-century fort-palace is located in Agra besides the Taj Mahal?", options:["Red Fort (Lal Qila)","Agra Fort","Amber Fort","Golconda Fort"], answer:1, fact:"Agra Fort, a UNESCO World Heritage site, is a major Mughal fort in Agra."},
+{q:"Which city is famous for the Gateway of India monument?", options:["Kolkata","Chennai","Mumbai","Hyderabad"], answer:2, fact:"The Gateway of India is a landmark in Mumbai built during the British era."},
+{q:"Which group of islands belongs to India and is located in the Bay of Bengal?", options:["Lakshadweep","Andaman & Nicobar","Maldives","Seychelles"], answer:1, fact:"The Andaman & Nicobar Islands are an Indian union territory in the Bay of Bengal."},
+{q:"What is the traditional Indian system of medicine known as?", options:["Homeopathy","Ayurveda","Allopathy","Unani"], answer:1, fact:"Ayurveda is a traditional medical system with roots in India."},
+{q:"Which festival is associated with colors and spring in India?", options:["Diwali","Holi","Navratri","Durga Puja"], answer:1, fact:"Holi is a festival of colors celebrated in spring across India."},
+{q:"Which animal is associated with Lord Ganesh and is often seen in folk art (a mouse) — what is the mouse called as Ganesh's vehicle?", options:["Bandar","Mushak","Hathi","Bakri"], answer:1, fact:"The mouse (Mushak) is the vahana or vehicle of Lord Ganesha."},
+{q:"Which city is home to the Gateway of India and Bollywood film industry?", options:["Kolkata","Chennai","Mumbai","Bengaluru"], answer:2, fact:"Mumbai is home to Bollywood, India's Hindi-language film industry."},
+{q:"Which city is famous for the Golden Temple (Harmandir Sahib)?", options:["Amritsar","Ludhiana","Jalandhar","Chandigarh"], answer:0, fact:"The Golden Temple in Amritsar is the holiest shrine of Sikhism."},
+{q:"Which Indian state is well-known for classical Odissi dance?", options:["Kerala","Odisha","Assam","Punjab"], answer:1, fact:"Odissi is a classical dance form that originated in Odisha."},
+{q:"Which landmark in Delhi houses the ruins of several ancient and medieval structures and includes the Iron Pillar?", options:["Red Fort","Qutub Complex","Humayun's Tomb","Jama Masjid"], answer:1, fact:"The Qutub complex includes the Iron Pillar and Qutub Minar."},
+{q:"Which is India's national tree?", options:["Neem","Banyan","Peepal","Mango"], answer:1, fact:"The banyan tree (Ficus benghalensis) is the national tree of India."},
+{q:"Which Indian city is famous as the 'City of Joy'?", options:["Mumbai","Kolkata","Chennai","Hyderabad"], answer:1, fact:"Kolkata is often called the 'City of Joy'."},
+{q:"Which Indian state has the famous backwaters and houseboats in Alleppey?", options:["Tamil Nadu","Kerala","Karnataka","Goa"], answer:1, fact:"Kerala's backwaters, especially Alleppey (Alappuzha), are famous for houseboats."},
+{q:"What is the largest religious monument in the world located in Gujarat, India?", options:["Akshardham (Delhi)","Somnath Temple","Modhera Sun Temple","Statue of Unity"], answer:3, fact:"The Statue of Unity in Gujarat is the world's tallest statue (statue of Sardar Vallabhbhai Patel)."},
+{q:"Which classical music system has its origins in Northern India?", options:["Carnatic","Hindustani","Bhangra","Sufi"], answer:1, fact:"Hindustani classical music is the tradition of North India."},
+{q:"Which classical music tradition is associated chiefly with South India?", options:["Hindustani","Carnatic","Kuchipudi","Lavani"], answer:1, fact:"Carnatic music is the classical tradition of South India."},
+{q:"Which UNESCO World Heritage site is a group of rock-cut cave monuments in Maharashtra?", options:["Ajanta & Ellora","Konark Sun Temple","Khajuraho","Qutub Minar"], answer:0, fact:"Ajanta and Ellora caves in Maharashtra are famous rock-cut cave complexes."},
+{q:"Which Indian state has the city of Bhopal as its capital?", options:["Madhya Pradesh","Chhattisgarh","Maharashtra","Rajasthan"], answer:0, fact:"Bhopal is the capital of Madhya Pradesh."},
+{q:"Which is the smallest state in India by area?", options:["Goa","Sikkim","Tripura","Nagaland"], answer:0, fact:"Goa is the smallest Indian state by area."},
+{q:"Which Indian festival marks the harvest and is widely celebrated in Punjab?", options:["Pongal","Baisakhi","Onam","Lohri"], answer:1, fact:"Baisakhi is an important harvest festival in Punjab."},
+{q:"Which ancient university in India was a renowned center of learning and is located in Bihar?", options:["Nalanda","Takshashila","Vikramshila","Kashi"], answer:0, fact:"Nalanda University in Bihar was an ancient center of learning."},
+{q:"What is India's national sport (traditionally associated)?", options:["Cricket","Hockey","Kabaddi","Football"], answer:1, fact:"Field hockey is traditionally regarded as India's national sport, though no formal declaration exists."},
+{q:"Which Indian state is known for the temple town of Madurai and the Meenakshi Temple?", options:["Kerala","Tamil Nadu","Andhra Pradesh","Karnataka"], answer:1, fact:"Madurai in Tamil Nadu is famous for the historic Meenakshi Amman Temple."},
+{q:"Which sea does the eastern coast of India border?", options:["Arabian Sea","Bay of Bengal","Andaman Sea","Laccadive Sea"], answer:1, fact:"The Bay of Bengal borders India's eastern coast."},
+{q:"Which Indian island group lies in the Arabian Sea?", options:["Andaman & Nicobar","Lakshadweep","Maldives","Sri Lanka"], answer:1, fact:"Lakshadweep is an Indian union territory of islands in the Arabian Sea."},
+{q:"Which dance form originates from Andhra Pradesh and Telangana and is known for graceful movements?", options:["Bharatanatyam","Kuchipudi","Mohiniyattam","Manipuri"], answer:1, fact:"Kuchipudi originated in Andhra Pradesh and is a classical dance form."},
+{q:"Which Mughal emperor built the Taj Mahal?", options:["Akbar","Shah Jahan","Babur","Aurangzeb"], answer:1, fact:"Shah Jahan commissioned the Taj Mahal in memory of his wife Mumtaz Mahal."},
+{q:"Which body of water separates India and Sri Lanka?", options:["Palk Strait","Strait of Malacca","Gulf of Mannar","Both Palk Strait and Gulf of Mannar"], answer:3, fact:"The Palk Strait and the Gulf of Mannar separate India and Sri Lanka."},
+{q:"Which state is famous for the Ranthambore National Park and tiger reserves?", options:["Rajasthan","Madhya Pradesh","Uttar Pradesh","Karnataka"], answer:0, fact:"Ranthambore National Park in Rajasthan is famous for tigers."},
+{q:"Which Indian city is known as the 'City of Palaces' and is home to Charminar?", options:["Hyderabad","Lucknow","Jaipur","Bhopal"], answer:0, fact:"Hyderabad's Charminar is an iconic monument; the city has been called the 'City of Pearls' too."},
+{q:"Which Indian state hosts the famous Konark Sun Temple?", options:["West Bengal","Odisha","Tamil Nadu","Gujarat"], answer:1, fact:"The Konark Sun Temple is a 13th-century monument in Odisha."},
+{q:"Which Indian festival is associated with the harvest in Kerala and features the snake boat races?", options:["Pongal","Onam","Bihu","Baisakhi"], answer:1, fact:"Onam is a harvest festival in Kerala marked by boat races and cultural programs."},
+{q:"Which body of water is east of the Indian peninsula?", options:["Bay of Bengal","Arabian Sea","Indian Ocean","Laccadive Sea"], answer:0, fact:"The Bay of Bengal lies to the east of peninsular India."},
+{q:"Which fort in Rajasthan is carved out of a single rock and resembles a honeycomb? (Famous: Mehrangarh is in Jodhpur)", options:["Mehrangarh","Chittorgarh","Jaisalmer Fort","Kumbhalgarh"], answer:0, fact:"Mehrangarh Fort in Jodhpur is one of Rajasthan's largest forts."},
+{q:"Which Indian state is the largest producer of spices and also known for its tea, backwaters and Ayurveda?", options:["Karnataka","Kerala","Tamil Nadu","Goa"], answer:1, fact:"Kerala is known for spices, tea regions, backwaters and Ayurvedic traditions."},
+{q:"Which Indian island territory is closest to the equator compared to mainland India?", options:["Lakshadweep","Andaman & Nicobar","Diu","Minicoy"], answer:1, fact:"The Andaman & Nicobar Islands lie further south and closer to the equator."},
+{q:"Which language has the second largest number of native speakers in India after Hindi?", options:["Bengali","Telugu","Marathi","Tamil"], answer:0, fact:"Bengali is among the most widely spoken native languages in India."},
+{q:"Which Indian city is famous for the Charminar monument and biryani?", options:["Lucknow","Hyderabad","Bengaluru","Surat"], answer:1, fact:"Hyderabad is famous for Charminar and Hyderabadi biryani."},
+{q:"Which river forms the fertile Gangetic plain and is central to agriculture in North India?", options:["Narmada","Ganga","Kaveri","Mahanadi"], answer:1, fact:"The Ganga and its tributaries form the Gangetic plain, vital for agriculture."},
+{q:"Which ancient rock-cut temples in Maharashtra are UNESCO-listed and famed for Buddhist art?", options:["Ellora","Elephanta Caves","Ajanta","Badami"], answer:2, fact:"The Ajanta caves are renowned for ancient Buddhist murals and sculptures."},
+{q:"Which Indian state is famous for the Gir National Park that protects the Asiatic lion?", options:["Gujarat","Madhya Pradesh","Rajasthan","Uttar Pradesh"], answer:0, fact:"Gir National Park in Gujarat is the last natural habitat of Asiatic lions."},
+{q:"Which large salt marsh area in Gujarat is famous for flamingos and the Great Rann?", options:["Sundarbans","Rann of Kutch","Thar Desert","Little Rann"], answer:1, fact:"The Rann of Kutch is a seasonal salt marsh in Gujarat known for its white salt plains."},
+{q:"Which Indian classical dance is performed primarily in the state of Manipur?", options:["Mohiniyattam","Manipuri","Bharatanatyam","Kuchipudi"], answer:1, fact:"Manipuri classical dance originates from Manipur and is distinctive for graceful movements."},
+{q:"Which important Indian political document was adopted by the Constituent Assembly on November 26, 1949?", options:["Indian Penal Code","The Constitution of India","The Indian Independence Act","The Republic Act"], answer:1, fact:"The Constitution of India was adopted on November 26, 1949 and came into effect on January 26, 1950."},
+{q:"Which Indian state is known for its silk and the city of Mysore?", options:["Karnataka","Tamil Nadu","Kerala","Andhra Pradesh"], answer:0, fact:"Mysore in Karnataka is known for silk and its rich heritage."},
+{q:"Which Indian mountain range runs parallel to the western coast and is known for biodiversity hotspots?", options:["Himalayas","Aravalli","Vindhya","Western Ghats"], answer:3, fact:"The Western Ghats are a biodiversity hotspot along India's western coast."},
+{q:"Which famous shrine sits in the city of Vaishno Devi, a major pilgrimage site?", options:["Amarnath","Vaishno Devi","Tirupati","Kedarnath"], answer:1, fact:"Vaishno Devi in Jammu & Kashmir is one of India's most visited pilgrimage sites."},
+{q:"Which Indian instrument is a classical string instrument used widely in Hindustani music (played with a bow)?", options:["Sitar","Sarangi","Veena","Tabla"], answer:1, fact:"The sarangi is a bowed string instrument used in Hindustani classical music."},
+{q:"Which historic Indian cave complex is famous for a large monolithic statue of Lord Shiva on an island near Mumbai?", options:["Ajanta","Ellora","Elephanta Caves","Kanheri"], answer:2, fact:"The Elephanta Caves contain rock-cut sculptures, including representations of Shiva."},
+{q:"Which independence leader is known as the father of the Indian constitution and was chairman of the drafting committee?", options:["Jawaharlal Nehru","B. R. Ambedkar","Sardar Patel","Maulana Azad"], answer:1, fact:"Dr. B. R. Ambedkar chaired the drafting committee of the Indian Constitution."},
+{q:"Which Indian state is known for the desert region Thar and the city of Jaisalmer?", options:["Gujarat","Rajasthan","Haryana","Punjab"], answer:1, fact:"Jaisalmer lies in the Thar Desert of Rajasthan and is famous for its fort."},
+{q:"What is the popularly used name for the national emergency line for police, fire or ambulance in India (single number)?", options:["100","101","102","112"], answer:3, fact:"112 is the single emergency helpline number being used in India in many regions."},
+{q:"Which coastal state is India's smallest state by population and area, known for beaches and Portuguese heritage?", options:["Goa","Sikkim","Manipur","Tripura"], answer:0, fact:"Goa is India's smallest state by area and known for beaches and colonial history."},
+{q:"Which Mughal garden-style tomb in Delhi is considered a precursor to later Mughal architecture and inspired the Taj Mahal?", options:["Red Fort","Humayun's Tomb","Safdarjung's Tomb","Jama Masjid"], answer:1, fact:"Humayun's Tomb in Delhi influenced many later Mughal monuments including the Taj Mahal."},
+{q:"Which major Indian festival involves worship of Goddess Durga and is especially celebrated in West Bengal as Durga Puja?", options:["Raksha Bandhan","Durga Puja","Navratri","Ganesh Chaturthi"], answer:1, fact:"Durga Puja is the biggest festival in West Bengal celebrating the goddess Durga."},
+{q:"Which Indian city hosts the famous Charminar and was the seat of the Nizams?", options:["Hyderabad","Lucknow","Bengaluru","Pune"], answer:0, fact:"Hyderabad was the seat of the Nizams and Charminar is a major landmark."},
+{q:"Which wildlife sanctuary in West Bengal is known for the Bengal tiger and the largest mangrove forest?", options:["Jim Corbett","Sundarbans","Periyar","Bandipur"], answer:1, fact:"The Sundarbans is the largest mangrove forest and home to Bengal tigers."},
+{q:"Which festival marks the Sikh new year and commemorates the formation of Khalsa (Vaisakhi)?", options:["Guru Nanak Jayanti","Baisakhi","Diwali","Holi"], answer:1, fact:"Vaisakhi (Baisakhi) marks the Sikh new year and the formation of Khalsa in 1699."},
+{q:"Which city has the famous Victoria Memorial built during British India and is a major cultural center in eastern India?", options:["Chennai","Kolkata","Mumbai","Bhubaneswar"], answer:1, fact:"The Victoria Memorial is a monument in Kolkata dedicated to Queen Victoria."},
+{q:"Which plateau makes up a large part of central India and includes many tribal regions?", options:["Deccan Plateau","Chota Nagpur Plateau","Malwa Plateau","Tibetan Plateau"], answer:1, fact:"The Chota Nagpur Plateau spans parts of Jharkhand, Odisha and Chhattisgarh and is rich in minerals."},
+{q:"Which Indian leader is popularly known as the 'Iron Man of India' for his role in integrating princely states?", options:["Jawaharlal Nehru","Sardar Vallabhbhai Patel","C. Rajagopalachari","Subhas Chandra Bose"], answer:1, fact:"Sardar Vallabhbhai Patel is called the 'Iron Man of India' for his work in integration after independence."},
+{q:"Which is the largest freshwater lake in India by surface area (Chilika is brackish though)?", options:["Vembanad","Chilika","Wular Lake","Sambhar"], answer:0, fact:"Vembanad Lake in Kerala is the longest and one of the largest lakes in India by area."},
+{q:"Which instrument is considered the national instrument of India?", options:["Sitar","Tabla","Veena","Harmonium"], answer:2, fact:"The Saraswati veena (veena) is often referred to as a classical Indian instrument; there's no official national instrument."},
+{q:"Which hill station is known as the 'Queen of Hill Stations' in India?", options:["Darjeeling","Simla","Ooty","Munnar"], answer:1, fact:"Shimla (Simla) is often called the 'Queen of Hill Stations'."},
+{q:"Which national park is India’s oldest and is also famous for tigers (established as Hailey National Park)?", options:["Kaziranga","Jim Corbett","Sundarbans","Ranthambore"], answer:1, fact:"Jim Corbett National Park in Uttarakhand is India's oldest national park, established in 1936."},
+{q:"Which desert is located in northwest India, spanning Rajasthan and parts of Pakistan?", options:["Gobi Desert","Thar Desert","Great Indian Desert","Sahara"], answer:1, fact:"The Thar Desert, also called the Great Indian Desert, lies largely in Rajasthan."},
+{q:"Which Indian classical dance from Andhra Pradesh uses strong narrative and speech-singing called 'sankirtana' elements? (Famous theatre dance)", options:["Kathakali","Bharatanatyam","Kuchipudi","Mohiniyattam"], answer:2, fact:"Kuchipudi includes dance-drama and has roots in Andhra traditions."},
+{q:"Which city is the capital of the Indian state of Gujarat?", options:["Ahmedabad","Surat","Gandhinagar","Vadodara"], answer:2, fact:"Gandhinagar is the capital of Gujarat; Ahmedabad is its largest city."},
+{q:"Which large temple city in Andhra Pradesh houses one of the richest pilgrimage centers in India, Tirupati?", options:["Tirupati","Vishakhapatnam","Vijayawada","Anantapur"], answer:0, fact:"Tirupati is famous for the Tirumala Venkateswara Temple, a major pilgrimage site."},
+{q:"Which Indian state is famous for the Konkan coast, Goan beaches, and Western Ghats biodiversity?", options:["Kerala","Goa","Maharashtra","Karnataka"], answer:2, fact:"Maharashtra has a long Konkan coastline, major cities and diverse ecology."},
+{q:"Which city is the legislative capital of India and hosts the Parliament (Sansad Bhavan)?", options:["Mumbai","Kolkata","New Delhi","Chennai"], answer:2, fact:"New Delhi is the seat of India's central government and Parliament."},
+{q:"Which important natural phenomenon occurs along the eastern coast of India during cyclonic storms originating in the Bay of Bengal?", options:["Tsunamis","Cyclones","Earthquakes","Tornadoes"], answer:1, fact:"The Bay of Bengal is prone to cyclones that affect eastern India and Bangladesh."},
+{q:"Which style of painting originated in Rajasthan and often depicts royal life and epics?", options:["Madhubani","Pattachitra","Rajasthani miniature","Warli"], answer:2, fact:"Rajasthani miniature paintings illustrate royal scenes and classical themes."},
+{q:"Which Indian state is the leading producer of grapes and is known for Nashik vineyards?", options:["Maharashtra","Karnataka","Punjab","Gujarat"], answer:0, fact:"Maharashtra, especially Nashik, is a major grape and wine-producing region."},
+{q:"Which sea food-rich coastal state of India is often called 'God's Own Country'?", options:["Kerala","Karnataka","Tamil Nadu","Andhra Pradesh"], answer:0, fact:"Kerala is popularly marketed as 'God's Own Country' for its landscapes and culture."},
+{q:"Which famous Indian poet and Nobel laureate wrote 'Gitanjali'?", options:["Sarojini Naidu","Rabindranath Tagore","T. S. Eliot","C. Rajagopalachari"], answer:1, fact:"Rabindranath Tagore won the Nobel Prize in Literature in 1913 for 'Gitanjali'."},
+{q:"Which state hosts the city of Chandigarh, designed by Le Corbusier (and is the capital of two states)?", options:["Punjab and Haryana share it","Punjab and Rajasthan share it","Haryana and Uttar Pradesh share it","Punjab and Gujarat share it"], answer:0, fact:"Chandigarh is a union territory and capital of both Punjab and Haryana."},
+{q:"What is the major legislative festival in South India where giant chariot processions are prominent (e.g., Jagannath Rath Yatra)?", options:["Rath Yatra","Kumbh Mela","Navratri","Pongal"], answer:0, fact:"Rath Yatra (chariot festival) is famously celebrated at Puri with huge chariots."},
+{q:"Which Indian classical dance is from Kerala and known for gentle, flowing movements often performed by women?", options:["Kathak","Bharatanatyam","Mohiniyattam","Kuchipudi"], answer:2, fact:"Mohiniyattam is a classical dance from Kerala performed primarily by women."},
+{q:"Which Indian city is known for IT & startups and hosts major companies and tech parks (often called the Startup Capital)?", options:["Mumbai","Bengaluru","Pune","Hyderabad"], answer:1, fact:"Bengaluru (Bangalore) is known as India's startup and tech hub."},
+{q:"Which elemental festival in India celebrates the Sun God with chariot-shaped temple architecture at Konark?", options:["Rath Yatra","Ganesh Chaturthi","Makar Sankranti","Konark Sun Festival"], answer:3, fact:"Konark Sun Temple is dedicated to the Sun God and inspires related festivals."},
+{q:"Which classical Indian instrument has sympathetic strings and is commonly used in Hindustani music (plucked)?", options:["Tabla","Sitar","Pakhawaj","Shehnai"], answer:1, fact:"The sitar is a plucked string instrument widely used in Hindustani classical music."},
+{q:"Which Indian state is famous for the classical dance form 'Bhangra' origins regionally and harvest celebrations?", options:["Punjab","Haryana","Rajasthan","Himachal Pradesh"], answer:0, fact:"Bhangra originates in Punjab as a harvest dance form (folk tradition)."},
+{q:"Which festival is associated with the worship of Lord Krishna's birth and is widely celebrated across India?", options:["Janmashtami","Raksha Bandhan","Navratri","Dussehra"], answer:0, fact:"Janmashtami celebrates the birth of Lord Krishna."},
+{q:"Which city is India's main diamond polishing center and major textile hub (Girnar nearby)?", options:["Ahmedabad","Surat","Vadodara","Rajkot"], answer:1, fact:"Surat in Gujarat is a major textile and diamond processing center."},
+{q:"Which river is known for flowing from the Himalayas down into Bangladesh and supports large-scale agriculture in eastern India?", options:["Godavari","Brahmaputra","Ganga","Krishna"], answer:2, fact:"The Ganga (with tributaries) supports agriculture across the Indo-Gangetic plain."},
+{q:"Which Indian state is known for the Meenakshi Temple in Madurai and the Bharatanatyam dance form origin?", options:["Karnataka","Tamil Nadu","Kerala","Andhra Pradesh"], answer:1, fact:"Tamil Nadu is rich in Dravidian architecture and classical arts like Bharatanatyam."},
+{q:"Which Indian city hosts the Gateway of India and the Taj Mahal Palace hotel?", options:["Mumbai","New Delhi","Kolkata","Chennai"], answer:0, fact:"The Gateway of India and the Taj Hotel are iconic landmarks of Mumbai."},
+{q:"Which legendary Indian leader led the Salt March (Dandi March) in 1930 against British salt laws?", options:["Mahatma Gandhi","Jawaharlal Nehru","Subhas Chandra Bose","Sardar Patel"], answer:0, fact:"Mahatma Gandhi led the Salt March to protest the British salt tax in 1930."},
+{q:"Which animal is protected in the Gir forest in India and is unique to Asia (Asiatic species)?", options:["Bengal tiger","Asiatic lion","Indian rhinoceros","Snow leopard"], answer:1, fact:"The Asiatic lion survives in the Gir forest of Gujarat."},
+{q:"Which city is known as the 'Manchester of India' for its textile industry (historic)?", options:["Mumbai","Surat","Ahmedabad","Coimbatore"], answer:2, fact:"Ahmedabad was historically called the 'Manchester of India' due to its textile mills."},
+{q:"Which river is famous in southern India and flows through Tamil Nadu supporting many reservoirs?", options:["Godavari","Kaveri (Cauvery)","Narmada","Tapti"], answer:1, fact:"The Kaveri (Cauvery) is an important river in southern India."},
+{q:"Which Indian state is famous for its hill station Ooty (Udhagamandalam) and Nilgiri hills?", options:["Kerala","Karnataka","Tamil Nadu","Goa"], answer:2, fact:"Ooty is a popular hill station in the Nilgiri Hills of Tamil Nadu."},
+{q:"Which major Indian city is the capital of West Bengal and was once the capital of British India?", options:["Kolkata","Mumbai","Chennai","New Delhi"], answer:0, fact:"Kolkata served as the capital of British India until 1911."},
+{q:"Which large salt marsh and seasonal desert in Kutch is famous for the Rann Utsav festival?", options:["Rann of Kutch","Thar Desert","Sambhar Salt Lake","Little Rann"], answer:0, fact:"The Rann of Kutch hosts the Rann Utsav festival celebrating local culture."}
+]; // 100 questions
+
+/* --------------------- End questions --------------------- */
+
+/* ensure there are at least 100 entries - above list contains 100 items */
+/* Shuffle and pick 10 random questions for session */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a }
+const sessionQs = shuffle(allQuestions.slice()).slice(0,10);
+
+let currentIndex = 0;
+let score = 0;
+const total = sessionQs.length;
+
+const questionArea = document.getElementById('questionArea');
+const factArea = document.getElementById('factArea');
+const qcount = document.getElementById('qcount');
+const scorechip = document.getElementById('scorechip');
+const nextBtn = document.getElementById('nextBtn');
+const progressText = document.getElementById('progressText');
+const resultCard = document.getElementById('resultCard');
+const quizCard = document.getElementById('quizCard');
+const finalScore = document.getElementById('finalScore');
+const finalText = document.getElementById('finalText');
+const restartBtn = document.getElementById('restartBtn');
+
+function renderQuestion(){
+  const q = sessionQs[currentIndex];
+  qcount.innerText = `Question ${currentIndex+1} / ${total}`;
+  scorechip.innerText = `Score: ${score}`;
+  factArea.innerText = '';
+  progressText.innerText = 'Pick an answer';
+  nextBtn.disabled = true;
+  // build options grid
+  const opts = q.options.map((o,i)=>`
+    <div class="opt" role="button" tabindex="0" data-index="${i}" aria-pressed="false">
+      <div class="letter">${String.fromCharCode(65+i)}</div>
+      <div class="text">${o}</div>
+    </div>
+  `).join('');
+  questionArea.innerHTML = `
+    <div class="question">${q.q}</div>
+    <div class="options">${opts}</div>
+  `;
+  // attach click handlers
+  Array.from(questionArea.querySelectorAll('.opt')).forEach(el=>{
+    el.addEventListener('click', onChoose);
+    el.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') onChoose.call(el,e) });
+  });
+}
+
+function onChoose(e){
+  // protect against multiple clicks
+  const el = (this === window ? e.currentTarget : this) || e.target;
+  if(!el || el.classList.contains('disabled')) return;
+  const idx = Number(el.getAttribute('data-index'));
+  handleAnswer(idx, el);
+}
+
+function handleAnswer(chosenIndex, element){
+  const q = sessionQs[currentIndex];
+  // disable all options pointer events
+  Array.from(questionArea.querySelectorAll('.opt')).forEach(o=>{
+    o.classList.add('disabled');
+    o.style.pointerEvents = 'none';
+  });
+  // mark correct/wrong
+  const correctIndex = q.answer;
+  const allOpts = Array.from(questionArea.querySelectorAll('.opt'));
+  if(chosenIndex === correctIndex){
+    allOpts[chosenIndex].classList.add('correct');
+    score++;
+    factArea.innerText = "Correct! " + q.fact;
+  } else {
+    allOpts[chosenIndex].classList.add('wrong');
+    allOpts[correctIndex].classList.add('correct');
+    factArea.innerText = "Not quite. " + q.fact;
+  }
+  scorechip.innerText = `Score: ${score}`;
+  // enable next button
+  nextBtn.disabled = false;
+  progressText.innerText = `Answered ${currentIndex+1} / ${total}`;
+  // auto-advance after 1.4s (still allow manual Next)
+  setTimeout(()=> {
+    if(!nextBtn.disabled) {
+      // proceed automatically
+      goNext();
+    }
+  }, 1400);
+}
+
+function goNext(){
+  currentIndex++;
+  if(currentIndex < total){
+    renderQuestion();
+  } else {
+    showResult();
+  }
+}
+
+nextBtn.addEventListener('click', ()=>{
+  // if still disabled, do nothing
+  if(nextBtn.disabled) return;
+  goNext();
+});
+
+function showResult(){
+  // show result card with tick animation
+  quizCard.classList.add('hidden');
+  resultCard.classList.remove('hidden');
+  finalScore.innerText = `Your Score: ${score} / ${total}`;
+  // short summary text
+  let percent = Math.round((score/total)*100);
+  if(percent === 100) finalText.innerText = "Perfect! Incredible score!";
+  else if(percent >= 80) finalText.innerText = "Great job!";
+  else if(percent >= 50) finalText.innerText = "Good effort — keep learning!";
+  else finalText.innerText = "Nice try — learn more and try again!";
+  // SVG animations execute via CSS keyframes on display — they run once
+  // If you want to replay the animation on restart, we'll reset by reflow
+}
+
+restartBtn.addEventListener('click', ()=>{
+  // reset state and pick new random 10
+  currentIndex = 0;
+  score = 0;
+  // reshuffle session questions from full pool
+  const shuffled = shuffle(allQuestions.slice()).slice(0,10);
+  sessionQs.length = 0;
+  Array.prototype.push.apply(sessionQs, shuffled);
+  // hide result, show quiz
+  resultCard.classList.add('hidden');
+  quizCard.classList.remove('hidden');
+  renderQuestion();
+});
+
+/* Initialize */
+renderQuestion();
+</script>
+</body>
+</html>

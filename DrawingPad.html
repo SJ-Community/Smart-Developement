@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Drawing Pad — Icons & Tooltips (Offline)</title>
+<style>
+  :root{ --bg:#f4f6f8; --panel:#ffffff; --muted:#6b7280; --accent:#2563eb; --accent2:#06b6d4; --danger:#ef4444 }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:var(--bg); color:#0f1724}
+  .app{
+    max-width:1100px;
+    margin:18px auto;
+    padding:14px;
+    display:grid;
+    grid-template-columns:320px 1fr;
+    gap:14px;
+    transition: grid-template-columns 0.3s ease;
+  }
+  .panel{
+    background:var(--panel);
+    border-radius:12px;
+    padding:12px;
+    box-shadow:0 8px 20px rgba(15,23,42,0.06);
+    overflow: auto;
+    /* for slide effect on mobile */
+    transition: transform 0.3s ease;
+    will-change: transform;
+  }
+  h1{margin:0;font-size:18px}
+  .muted{color:var(--muted);font-size:13px}
+
+  /* Tools */
+  .controls{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+  .tool-list{display:flex;flex-wrap:wrap;gap:8px}
+  .tool-btn{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:#fbfdff;border:1px solid #eef2ff;cursor:pointer;user-select:none;min-width:84px; justify-content:center;}
+  .tool-btn.active{background:linear-gradient(90deg,var(--accent),var(--accent2));color:white}
+  .tool-icon{width:20px;height:20px;display:block}
+  .tool-label{font-weight:600;font-size:13px}
+  .tool-tip{font-size:12px;color:var(--muted)}
+
+  /* Layout */
+  .canvas-wrap{position:relative;overflow:hidden;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.06)}
+  canvas{display:block;background:white;width:100%;height:72vh}
+  .toolbar-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+  .options{display:flex;flex-direction:column;gap:10px}
+  .row{display:flex;gap:8px;align-items:center}
+  input[type=range]{width:100%}
+  input[type=color]{width:44px;height:34px;padding:0;border-radius:6px;border:0}
+  button{font:inherit}
+  .ghost{background:transparent;border:1px solid rgba(15,23,42,0.06);padding:8px;border-radius:8px}
+  .small{font-size:13px;padding:8px}
+  .muted-small{color:var(--muted);font-size:12px}
+
+  /* tooltip on hover (for icon-only small buttons) */
+  .has-tooltip{position:relative}
+  .has-tooltip .tooltip{position:absolute;background:#042027;color:#fff;padding:6px 8px;border-radius:6px;font-size:12px;white-space:nowrap;bottom:110%;left:50%;transform:translateX(-50%) scale(0.96);opacity:0;pointer-events:none;transition:all .12s ease}
+  .has-tooltip:hover .tooltip{opacity:1;transform:translateX(-50%) scale(1)}
+
+  /* New toggler button styles */
+  #toolToggleBtn {
+    display:none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    padding: 8px 10px;
+    cursor: pointer;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    color: white;
+    user-select:none;
+  }
+  #toolToggleBtn svg {
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
+  }
+
+  /* Mobile styles */
+  @media(max-width: 980px) {
+    .app {
+      grid-template-columns: 0 1fr; /* hide tools by default */
+    }
+    /* Show toggler button */
+    #toolToggleBtn {
+      display: block;
+    }
+    /* Slide in/out panel from left */
+    .panel.tools-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 280px;
+      height: 100vh;
+      padding-top: 60px;
+      box-shadow: 4px 0 12px rgba(0,0,0,0.1);
+      background: var(--panel);
+      border-radius: 0;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index: 999;
+      overflow-y: auto;
+    }
+    .panel.tools-panel.open {
+      transform: translateX(0);
+    }
+    /* Adjust canvas panel to full width when tools hidden */
+    .panel.canvas-panel {
+      border-radius: 12px;
+      margin-left: 0;
+      grid-column: 1 / -1;
+    }
+  }
+
+</style>
+</head>
+<body>
+
+<button id="toolToggleBtn" aria-label="Toggle Tools Menu" title="Toggle Tools Menu" aria-pressed="false">
+  <!-- Hamburger icon -->
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="3" y1="7" x2="21" y2="7"/>
+    <line x1="3" y1="12" x2="21" y2="12"/>
+    <line x1="3" y1="17" x2="21" y2="17"/>
+  </svg>
+</button>
+
+<div class="app">
+  <div class="panel tools-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <h1>Drawing Pad - SJ-Community</h1>
+        <div class="muted">Offline • Icons</div>
+      </div>
+      <div><div class="muted">v1.2</div></div>
+    </div>
+
+    <div class="controls">
+      <div>
+        <label class="muted">Tools</label>
+        <div class="tool-list" id="tools">
+          <!-- Existing buttons -->
+          <div class="tool-btn active" data-tool="pen" tabindex="0">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21l3-1 11-11-2-2L5 18l-2 3z" fill="currentColor"/><path d="M14.5 6.5l3 3" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>
+            <div>
+              <div class="tool-label">Pen</div>
+              <div class="tool-tip">Freehand drawing</div>
+            </div>
+          </div>
+
+          <div class="tool-btn" data-tool="line" tabindex="0">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 20L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <div>
+              <div class="tool-label">Line</div>
+              <div class="tool-tip">Draw straight lines</div>
+            </div>
+          </div>
+
+          <div class="tool-btn" data-tool="rect" tabindex="0">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" stroke="currentColor" stroke-width="2" rx="2"/></svg>
+            <div>
+              <div class="tool-label">Rect</div>
+              <div class="tool-tip">Rectangle tool</div>
+            </div>
+          </div>
+
+          <div class="tool-btn" data-tool="circle" tabindex="0">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/></svg>
+            <div>
+              <div class="tool-label">Circle</div>
+              <div class="tool-tip">Ellipse/circle tool</div>
+            </div>
+          </div>
+
+          <div class="tool-btn" data-tool="eraser" tabindex="0">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none"><path d="M3 17L9 11l7-7 4 4-7 7-7 3z" fill="currentColor"/></svg>
+            <div>
+              <div class="tool-label">Eraser</div>
+              <div class="tool-tip">Erase strokes</div>
+            </div>
+          </div>
+
+          <!-- New Triangle tool -->
+          <div class="tool-btn" data-tool="triangle" tabindex="0">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+              <path d="M12 4 L4 20 L20 20 Z"/>
+            </svg>
+            <div>
+              <div class="tool-label">Triangle</div>
+              <div class="tool-tip">Draw triangle</div>
+            </div>
+          </div>
+
+          <!-- New Star tool -->
+          <div class="tool-btn" data-tool="star" tabindex="0">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+              <path d="M12 2 L14.9 8.3 L21.8 9.2 L16.4 14 L17.7 20.9 L12 17.7 L6.3 20.9 L7.6 14 L2.2 9.2 L9.1 8.3 Z"/>
+            </svg>
+            <div>
+              <div class="tool-label">Star</div>
+              <div class="tool-tip">Draw star</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="options">
+        <div class="row">
+          <label class="muted">Color</label>
+          <input id="color" type="color" value="#111827" aria-label="Brush color" />
+        </div>
+
+        <div class="row">
+          <label class="muted">Size</label>
+          <input id="size" type="range" min="1" max="80" value="6" />
+        </div>
+
+        <div class="row">
+          <label class="muted">Opacity</label>
+          <input id="opacity" type="range" min="0.1" max="1" step="0.1" value="1" />
+        </div>
+
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div style="display:flex;gap:8px;align-items:center">
+            <button id="undoBtn" class="ghost small has-tooltip" title="Undo (Z)">
+              <!-- Undo SVG -->
+              <svg class="tool-icon" viewBox="0 0 24 24"><path d="M12 5v4l-6-6 6-6v4c4.418 0 8 3.582 8 8s-3.582 8-8 8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="tooltip">Undo</span>
+            </button>
+
+            <button id="gridBtn" class="ghost small has-tooltip" title="Toggle Grid (G)">
+              <!-- Grid SVG -->
+              <svg class="tool-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="14" y="14" width="7" height="7" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+              <span class="tooltip">Toggle Grid</span>
+            </button>
+
+            <button id="clearBtn" class="ghost small has-tooltip" title="Clear Canvas">
+              <!-- Trash SVG -->
+              <svg class="tool-icon" viewBox="0 0 24 24"><path d="M3 6h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 11v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 11v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span class="tooltip">Clear</span>
+            </button>
+          </div>
+
+          <div style="display:flex;gap:8px;align-items:center">
+
+            <button id="copyBtn" class="ghost small" title="Copy image to clipboard">
+              <!-- Copy SVG -->
+              <svg class="tool-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="4" y="4" width="11" height="11" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="muted-small">Shortcuts: P=Pen, L=Line, R=Rect, C=Circle, E=Eraser, Z=Undo, G=Grid</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel canvas-panel">
+    <div class="canvas-wrap">
+      <canvas id="canvas" aria-label="Drawing canvas"></canvas>
+    </div>
+    <div class="toolbar-bottom">
+      <div class="muted">Status: <span id="status">Ready</span></div>
+      <div class="muted">Tip: Use mouse or touch to draw</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const colorInp = document.getElementById('color');
+const sizeInp = document.getElementById('size');
+const opacityInp = document.getElementById('opacity');
+const toolsDiv = document.getElementById('tools');
+const undoBtn = document.getElementById('undoBtn');
+const clearBtn = document.getElementById('clearBtn');
+const gridBtn = document.getElementById('gridBtn');
+const copyBtn = document.getElementById('copyBtn');
+const statusEl = document.getElementById('status');
+const toolToggleBtn = document.getElementById('toolToggleBtn');
+const toolsPanel = document.querySelector('.tools-panel');
+const app = document.querySelector('.app');
+
+let drawing = false;
+let tool = 'pen';
+let last = {x:0, y:0};
+let start = {x:0, y:0};
+let undoStack = [];
+const maxUndo = 30;
+let showGrid = false;
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  const width = canvas.clientWidth * dpr;
+  const height = canvas.clientHeight * dpr;
+  if(canvas.width !== width || canvas.height !== height){
+    canvas.width = width;
+    canvas.height = height;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    redraw();
+  }
+}
+
+function redraw(){
+  // redraw from last undo or clear
+  if(undoStack.length){
+    const imgData = undoStack[undoStack.length-1];
+    ctx.putImageData(imgData,0,0);
+  } else {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if(showGrid) drawGrid();
+  }
+}
+
+function saveState(){
+  try {
+    if(undoStack.length >= maxUndo){
+      undoStack.shift();
+    }
+    undoStack.push(ctx.getImageData(0,0,canvas.width,canvas.height));
+  } catch(e){
+    // ignore
+  }
+}
+
+function drawGrid(){
+  const gridSize = 20 * (window.devicePixelRatio || 1);
+  ctx.save();
+  ctx.strokeStyle = '#d1d5db33';
+  ctx.lineWidth = 1;
+  for(let x=0;x<canvas.width;x+=gridSize){
+    ctx.beginPath();
+    ctx.moveTo(x,0);
+    ctx.lineTo(x,canvas.height);
+    ctx.stroke();
+  }
+  for(let y=0;y<canvas.height;y+=gridSize){
+    ctx.beginPath();
+    ctx.moveTo(0,y);
+    ctx.lineTo(canvas.width,y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function clearCanvas(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(showGrid) drawGrid();
+  saveState();
+  statusEl.textContent = "Cleared";
+}
+
+function drawLine(x1,y1,x2,y2){
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x2,y2);
+  ctx.stroke();
+}
+
+function drawRect(x1,y1,x2,y2){
+  ctx.beginPath();
+  ctx.rect(Math.min(x1,x2), Math.min(y1,y2), Math.abs(x2-x1), Math.abs(y2-y1));
+  ctx.stroke();
+}
+
+function drawCircle(x1,y1,x2,y2){
+  const radius = Math.sqrt((x2-x1)**2+(y2-y1)**2);
+  ctx.beginPath();
+  ctx.arc(x1,y1,radius,0,Math.PI*2);
+  ctx.stroke();
+}
+
+function drawTriangle(x1,y1,x2,y2){
+  ctx.beginPath();
+  // Draw an isosceles triangle pointing upward with base between (x1,y2) and (x2,y2)
+  const baseLeftX = Math.min(x1,x2);
+  const baseRightX = Math.max(x1,x2);
+  const baseY = Math.max(y1,y2);
+  const apexX = (baseLeftX + baseRightX) / 2;
+  const apexY = Math.min(y1,y2);
+  ctx.moveTo(apexX, apexY);
+  ctx.lineTo(baseRightX, baseY);
+  ctx.lineTo(baseLeftX, baseY);
+  ctx.closePath();
+  ctx.stroke();
+}
+
+function drawStar(cx, cy, spikes, outerRadius, innerRadius){
+  let rot = Math.PI / 2 * 3;
+  let x = cx;
+  let y = cy;
+  const step = Math.PI / spikes;
+
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - outerRadius);
+  for(let i=0; i<spikes; i++){
+    x = cx + Math.cos(rot) * outerRadius;
+    y = cy + Math.sin(rot) * outerRadius;
+    ctx.lineTo(x, y);
+    rot += step;
+
+    x = cx + Math.cos(rot) * innerRadius;
+    y = cy + Math.sin(rot) * innerRadius;
+    ctx.lineTo(x, y);
+    rot += step;
+  }
+  ctx.lineTo(cx, cy - outerRadius);
+  ctx.closePath();
+  ctx.stroke();
+}
+
+function startDrawing(x,y){
+  drawing = true;
+  start = {x,y};
+  last = {x,y};
+  if(tool === 'pen' || tool === 'eraser'){
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+  }
+}
+
+function continueDrawing(x,y){
+  if(!drawing) return;
+
+  ctx.strokeStyle = (tool === 'eraser') ? 'white' : colorInp.value;
+  ctx.globalAlpha = parseFloat(opacityInp.value);
+  ctx.lineWidth = parseInt(sizeInp.value);
+
+  if(tool === 'pen'){
+    ctx.lineTo(x,y);
+    ctx.stroke();
+    last = {x,y};
+  } else if(tool === 'eraser'){
+    ctx.lineTo(x,y);
+    ctx.stroke();
+    last = {x,y};
+  } else {
+    // For line, rect, circle, triangle, star — we redraw preview
+    redraw(); // clear and restore last snapshot
+    ctx.strokeStyle = colorInp.value;
+    ctx.globalAlpha = parseFloat(opacityInp.value);
+    ctx.lineWidth = parseInt(sizeInp.value);
+    switch(tool){
+      case 'line':
+        drawLine(start.x,start.y,x,y);
+        break;
+      case 'rect':
+        drawRect(start.x,start.y,x,y);
+        break;
+      case 'circle':
+        drawCircle(start.x,start.y,x,y);
+        break;
+      case 'triangle':
+        drawTriangle(start.x,start.y,x,y);
+        break;
+      case 'star':
+        // Calculate center and radii for star
+        let centerX = (start.x + x) / 2;
+        let centerY = (start.y + y) / 2;
+        let outerRadius = Math.min(Math.abs(x - start.x), Math.abs(y - start.y)) / 2;
+        if (outerRadius < 5) outerRadius = 5;
+        let innerRadius = outerRadius / 2.5;
+        drawStar(centerX, centerY, 5, outerRadius, innerRadius);
+        break;
+    }
+  }
+}
+
+function endDrawing(x,y){
+  if(!drawing) return;
+  drawing = false;
+
+  ctx.strokeStyle = (tool === 'eraser') ? 'white' : colorInp.value;
+  ctx.globalAlpha = parseFloat(opacityInp.value);
+  ctx.lineWidth = parseInt(sizeInp.value);
+
+  if(tool === 'pen' || tool === 'eraser'){
+    ctx.lineTo(x,y);
+    ctx.stroke();
+  } else {
+    // Draw final shape
+    redraw();
+    switch(tool){
+      case 'line': drawLine(start.x,start.y,x,y); break;
+      case 'rect': drawRect(start.x,start.y,x,y); break;
+      case 'circle': drawCircle(start.x,start.y,x,y); break;
+      case 'triangle': drawTriangle(start.x,start.y,x,y); break;
+      case 'star':
+        let centerX = (start.x + x) / 2;
+        let centerY = (start.y + y) / 2;
+        let outerRadius = Math.min(Math.abs(x - start.x), Math.abs(y - start.y)) / 2;
+        if (outerRadius < 5) outerRadius = 5;
+        let innerRadius = outerRadius / 2.5;
+        drawStar(centerX, centerY, 5, outerRadius, innerRadius);
+        break;
+    }
+  }
+  saveState();
+  statusEl.textContent = "Drawn " + tool;
+}
+
+function getPointerPos(evt){
+  const rect = canvas.getBoundingClientRect();
+  let clientX, clientY;
+  if(evt.touches && evt.touches.length) {
+    clientX = evt.touches[0].clientX;
+    clientY = evt.touches[0].clientY;
+  } else {
+    clientX = evt.clientX;
+    clientY = evt.clientY;
+  }
+  return {
+    x: (clientX - rect.left) * (canvas.width / rect.width),
+    y: (clientY - rect.top) * (canvas.height / rect.height)
+  };
+}
+
+// Event listeners
+canvas.addEventListener('mousedown', e => {
+  const pos = getPointerPos(e);
+  startDrawing(pos.x,pos.y);
+});
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const pos = getPointerPos(e);
+  startDrawing(pos.x,pos.y);
+},{passive:false});
+
+canvas.addEventListener('mousemove', e => {
+  const pos = getPointerPos(e);
+  continueDrawing(pos.x,pos.y);
+});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const pos = getPointerPos(e);
+  continueDrawing(pos.x,pos.y);
+},{passive:false});
+
+canvas.addEventListener('mouseup', e => {
+  const pos = getPointerPos(e);
+  endDrawing(pos.x,pos.y);
+});
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  const pos = getPointerPos(e.changedTouches[0]);
+  endDrawing(pos.x,pos.y);
+},{passive:false});
+
+// Tool switching
+toolsDiv.addEventListener('click', e => {
+  const btn = e.target.closest('.tool-btn');
+  if(!btn) return;
+  if(btn.classList.contains('active')) return;
+  document.querySelector('.tool-btn.active').classList.remove('active');
+  btn.classList.add('active');
+  tool = btn.getAttribute('data-tool');
+  statusEl.textContent = 'Selected tool: ' + tool;
+});
+
+toolsDiv.addEventListener('keydown', e => {
+  if(e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    e.target.click();
+  }
+});
+
+// Undo
+undoBtn.addEventListener('click', () => {
+  if(undoStack.length > 1){
+    undoStack.pop();
+    const imgData = undoStack[undoStack.length-1];
+    ctx.putImageData(imgData,0,0);
+    statusEl.textContent = "Undo";
+  } else {
+    clearCanvas();
+  }
+});
+
+// Clear
+clearBtn.addEventListener('click', () => {
+  clearCanvas();
+});
+
+// Grid toggle
+gridBtn.addEventListener('click', () => {
+  showGrid = !showGrid;
+  if(showGrid) drawGrid();
+  else redraw();
+  statusEl.textContent = showGrid ? "Grid on" : "Grid off";
+});
+
+
+// Copy to clipboard
+copyBtn.addEventListener('click', async () => {
+  try {
+    canvas.toBlob(async blob => {
+      if(blob){
+        await navigator.clipboard.write([
+          new ClipboardItem({'image/png': blob})
+        ]);
+        statusEl.textContent = "Copied to clipboard";
+      }
+    });
+  } catch(e){
+    statusEl.textContent = "Copy failed";
+  }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT') return;
+  switch(e.key.toLowerCase()){
+    case 'p': selectTool('pen'); break;
+    case 'l': selectTool('line'); break;
+    case 'r': selectTool('rect'); break;
+    case 'c': selectTool('circle'); break;
+    case 'e': selectTool('eraser'); break;
+    case 't': selectTool('triangle'); break;
+    case 's': selectTool('star'); break;
+    case 'z':
+      e.preventDefault();
+      undoBtn.click();
+      break;
+    case 'g':
+      e.preventDefault();
+      gridBtn.click();
+      break;
+  }
+});
+
+function selectTool(t){
+  const btn = toolsDiv.querySelector(`.tool-btn[data-tool="${t}"]`);
+  if(!btn) return;
+  document.querySelector('.tool-btn.active').classList.remove('active');
+  btn.classList.add('active');
+  tool = t;
+  statusEl.textContent = 'Selected tool: ' + tool;
+}
+
+// Tool panel toggle for mobile
+toolToggleBtn.addEventListener('click', () => {
+  const isOpen = toolsPanel.classList.toggle('open');
+  toolToggleBtn.setAttribute('aria-pressed', isOpen);
+  statusEl.textContent = isOpen ? "Tools shown" : "Tools hidden";
+});
+
+window.addEventListener('resize', () => {
+  resize();
+  if(window.innerWidth > 980){
+    toolsPanel.classList.remove('open');
+    toolToggleBtn.setAttribute('aria-pressed', false);
+    app.style.gridTemplateColumns = '320px 1fr';
+  } else {
+    if(!toolsPanel.classList.contains('open')){
+      app.style.gridTemplateColumns = '0 1fr';
+    } else {
+      app.style.gridTemplateColumns = '280px 1fr';
+    }
+  }
+});
+
+resize();
+saveState();
+</script>
+
+</body>
+</html>
