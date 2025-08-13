@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MI-Style Calculator (New Colors) + Converters</title>
+  <style>
+    :root{
+      --bg: #0c1222;
+      --panel: #121a2f;
+      --accent: #22d3ee; /* cyan */
+      --accent-2:#7c3aed; /* violet */
+      --ink: #e8edf7;
+      --muted:#9fb0d0;
+      --btn:#1a2542;
+      --btn-2:#0f172a;
+      --good:#22c55e;
+      --bad:#ef4444;
+      --shadow: 0 10px 25px rgba(0,0,0,.4);
+      --round-xl: 20px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background: radial-gradient(1200px 800px at 80% -10%, rgba(124,58,237,.25), transparent 60%),
+                              radial-gradient(800px 600px at -10% 110%, rgba(34,211,238,.2), transparent 60%),
+                              var(--bg);
+      color:var(--ink); font: 500 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      display:flex; align-items:center; justify-content:center; padding:16px;
+    }
+    .app{
+      width:min(900px, 100%); max-width:900px; display:grid; gap:14px;
+      grid-template-rows:auto 1fr; 
+    }
+    .header{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .brand{display:flex; align-items:center; gap:10px; letter-spacing:.5px}
+    .brand .dot{width:10px; height:10px; background:linear-gradient(135deg, var(--accent), var(--accent-2)); border-radius:50%; box-shadow:0 0 18px var(--accent)}
+    .brand h1{font-size:18px; margin:0; color:var(--ink); opacity:.9}
+
+    .tabs{background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); padding:6px; border-radius:999px; display:flex; gap:6px}
+    .tab{border:none; background:transparent; color:var(--muted); padding:10px 16px; border-radius:999px; cursor:pointer}
+    .tab.active{background:linear-gradient(135deg, rgba(34,211,238,.22), rgba(124,58,237,.22)); color:var(--ink)}
+
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); border-radius:var(--round-xl); box-shadow:var(--shadow);}
+
+    .panel{display:none}
+    .panel.active{display:grid}
+
+    /* Display */
+    .display{
+      padding:18px 20px; text-align:right; border-radius:var(--round-xl) var(--round-xl) 10px 10px; 
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .expr{color:var(--muted); font-size:14px; min-height:22px; letter-spacing:.3px; overflow:auto; white-space:nowrap}
+    .result{font-size:38px; letter-spacing:1px; margin-top:6px; font-weight:700}
+
+    /* Keypads */
+    .pad{padding:12px}
+    .grid{
+      display:grid; gap:10px; 
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .btn{
+      user-select:none; -webkit-user-select:none; touch-action:manipulation;
+      padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,.06);
+      background: linear-gradient(180deg, var(--btn), var(--btn-2));
+      color:var(--ink); font-size:20px; font-weight:600; text-align:center; cursor:pointer;
+      transition: transform .04s ease, box-shadow .2s ease, background .3s ease;
+      box-shadow: inset 0 0 0 0 rgba(255,255,255,.06);
+    }
+    .btn:active{transform:translateY(1px);}
+    .btn.fn{font-size:16px; color:#a6e9ff}
+    .btn.op{color:#c3b4ff}
+    .btn.equal{grid-column: span 2; background:linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow:0 10px 25px rgba(124,58,237,.35)}
+    .btn.wide{grid-column: span 2}
+    .btn.good{color:var(--good)}
+    .btn.bad{color:var(--bad)}
+
+    /* Scientific rows */
+    .grid.scientific{grid-template-columns: repeat(5, 1fr)}
+
+    /* Converter */
+    .converter{display:grid; gap:12px; padding:12px}
+    .seg{
+      display:flex; gap:8px; overflow:auto; padding:6px; border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .chip{flex:0 0 auto; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04); padding:10px 14px; border-radius:999px; color:var(--muted); cursor:pointer}
+    .chip.active{background:linear-gradient(135deg, rgba(34,211,238,.22), rgba(124,58,237,.22)); color:var(--ink)}
+
+    .conv-card{display:grid; gap:12px; padding:14px; background:rgba(255,255,255,.03); border-radius:16px; border:1px solid rgba(255,255,255,.06)}
+    .row{display:flex; gap:10px; align-items:center}
+    select,input{width:100%; padding:14px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.08); background:rgba(8,12,24,.6); color:var(--ink); font-size:16px}
+    .swap{min-width:48px; height:48px; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:white; font-weight:800; cursor:pointer}
+
+    .muted{color:var(--muted)}
+
+    @media (max-width: 520px){
+      .result{font-size:34px}
+      .btn{padding:14px; font-size:18px}
+      .brand h1{font-size:16px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="brand"><span class="dot"></span><h1>MI‑Style Calculator • SJ-Community</h1></div>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="basic" aria-selected="true">Basic</button>
+        <button class="tab" data-tab="scientific">Scientific</button>
+        <button class="tab" data-tab="convert">Convert</button>
+      </div>
+    </div>
+
+    <!-- BASIC PANEL -->
+    <section id="panel-basic" class="panel active card" role="tabpanel" aria-labelledby="tab-basic">
+      <div class="display">
+        <div id="expr-basic" class="expr"></div>
+        <div id="res-basic" class="result">0</div>
+      </div>
+      <div class="pad">
+        <div class="grid">
+          <button class="btn fn" data-key="AC">AC</button>
+          <button class="btn fn" data-key="DEL">DEL</button>
+          <button class="btn op" data-key="%">%</button>
+          <button class="btn op" data-key="÷">÷</button>
+
+          <button class="btn" data-key="7">7</button>
+          <button class="btn" data-key="8">8</button>
+          <button class="btn" data-key="9">9</button>
+          <button class="btn op" data-key="×">×</button>
+
+          <button class="btn" data-key="4">4</button>
+          <button class="btn" data-key="5">5</button>
+          <button class="btn" data-key="6">6</button>
+          <button class="btn op" data-key="-">−</button>
+
+          <button class="btn" data-key="1">1</button>
+          <button class="btn" data-key="2">2</button>
+          <button class="btn" data-key="3">3</button>
+          <button class="btn op" data-key="+">+</button>
+
+          <button class="btn" data-key="00">00</button>
+          <button class="btn" data-key="0">0</button>
+          <button class="btn" data-key=".">.</button>
+          <button class="btn equal" data-key="=">=</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCIENTIFIC PANEL -->
+    <section id="panel-scientific" class="panel card" role="tabpanel" aria-labelledby="tab-scientific">
+      <div class="display">
+        <div id="expr-sci" class="expr"></div>
+        <div id="res-sci" class="result">0</div>
+      </div>
+      <div class="pad">
+        <div class="grid scientific">
+          <button class="btn fn" data-key="AC">AC</button>
+          <button class="btn fn" data-key="DEL">DEL</button>
+          <button class="btn op" data-key="(">(</button>
+          <button class="btn op" data-key=")">)</button>
+          <button class="btn op" data-key="%">%</button>
+
+          <button class="btn fn" data-key="sin">sin</button>
+          <button class="btn fn" data-key="cos">cos</button>
+          <button class="btn fn" data-key="tan">tan</button>
+          <button class="btn fn" data-key="ln">ln</button>
+          <button class="btn fn" data-key="log">log</button>
+
+          <button class="btn fn" data-key="√">√</button>
+          <button class="btn fn" data-key="x²">x²</button>
+          <button class="btn fn" data-key="x³">x³</button>
+          <button class="btn fn" data-key="^">x^y</button>
+          <button class="btn fn" data-key="1/x">1/x</button>
+
+          <button class="btn" data-key="7">7</button>
+          <button class="btn" data-key="8">8</button>
+          <button class="btn" data-key="9">9</button>
+          <button class="btn op" data-key="÷">÷</button>
+          <button class="btn fn" data-key="π">π</button>
+
+          <button class="btn" data-key="4">4</button>
+          <button class="btn" data-key="5">5</button>
+          <button class="btn" data-key="6">6</button>
+          <button class="btn op" data-key="×">×</button>
+          <button class="btn fn" data-key="e">e</button>
+
+          <button class="btn" data-key="1">1</button>
+          <button class="btn" data-key="2">2</button>
+          <button class="btn" data-key="3">3</button>
+          <button class="btn op" data-key="-">−</button>
+          <button class="btn fn" data-key="!">n!</button>
+
+          <button class="btn" data-key="0">0</button>
+          <button class="btn" data-key=".">.</button>
+          <button class="btn op" data-key="+">+</button>
+          <button class="btn equal wide" data-key="=">=</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONVERTER PANEL -->
+    <section id="panel-convert" class="panel card" role="tabpanel" aria-labelledby="tab-convert">
+      <div class="converter">
+        <div class="seg" id="category-chips" aria-label="Conversion categories">
+          <!-- 7 categories -->
+          <button class="chip active" data-cat="length">Length</button>
+          <button class="chip" data-cat="weight">Weight</button>
+          <button class="chip" data-cat="temperature">Temperature</button>
+          <button class="chip" data-cat="speed">Speed</button>
+          <button class="chip" data-cat="area">Area</button>
+          <button class="chip" data-cat="volume">Volume</button>
+          <button class="chip" data-cat="time">Time</button>
+        </div>
+
+        <div class="conv-card">
+          <div class="row">
+            <select id="unit-from"></select>
+            <button class="swap" id="swap" title="Swap">⇅</button>
+            <select id="unit-to"></select>
+          </div>
+          <div class="row">
+            <input id="val-from" type="number" placeholder="Enter value" />
+          </div>
+          <div class="row">
+            <div class="muted">Result</div>
+          </div>
+          <div class="row">
+            <div id="val-to" class="result" style="text-align:left; font-size:28px">0</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    /******************** Tabs ********************/
+    const tabs = document.querySelectorAll('.tab');
+    const panels = {
+      basic: document.getElementById('panel-basic'),
+      scientific: document.getElementById('panel-scientific'),
+      convert: document.getElementById('panel-convert'),
+    };
+    tabs.forEach(t=>t.addEventListener('click',()=>{
+      tabs.forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      Object.values(panels).forEach(p=>p.classList.remove('active'));
+      panels[t.dataset.tab].classList.add('active');
+    }));
+
+    /******************** Calculator Core ********************/
+    function createCalc(exprEl, resEl){
+      let expr = '';
+      let justEvaluated = false;
+
+      const allowed = /[0-9+\-*/().^%]|π|e|sin|cos|tan|ln|log|√|!/g;
+      function sanitize(s){
+        return (s.match(allowed) || []).join('');
+      }
+      function factorial(n){
+        n = Math.floor(n);
+        if(n<0 || n>170) return NaN; // limit
+        let r = 1; for(let i=2;i<=n;i++) r*=i; return r;
+      }
+      function toJS(s){
+        return s
+          .replace(/π/g,'(Math.PI)')
+          .replace(/e(?![a-zA-Z])/g,'(Math.E)')
+          .replace(/√/g,'Math.sqrt')
+          .replace(/sin/g,'Math.sin')
+          .replace(/cos/g,'Math.cos')
+          .replace(/tan/g,'Math.tan')
+          .replace(/ln/g,'Math.log')
+          .replace(/log/g,'(x)=>Math.log10(x)')
+          .replace(/\^/g,'**')
+          .replace(/÷/g,'/')
+          .replace(/×/g,'*')
+        ;
+      }
+      function applyFactorial(s){
+        // Replace occurrences like 5! or (2+3)! with factorial()
+        return s.replace(/(\([^()]*\)|\d+(?:\.\d+)?)!/g,(m,inner)=>`factorial(${inner})`);
+      }
+      function applyOneOver(s){
+        return s.replace(/1\/x/g,'inv');
+      }
+      function evalExpr(){
+        if(!expr) return '0';
+        try{
+          let s = sanitize(expr);
+          s = applyFactorial(s);
+          s = applyOneOver(s);
+          s = toJS(s);
+          s = s.replace(/inv/g,'(x)=>1/x');
+          // wrap log10 and inv calls properly
+          // Replace f(x) arrow patterns with callable form
+          // Evaluate with Function and limited scope
+          const fn = new Function('factorial',`return (()=>{with(Math){return ${s}})})()`);
+          let val = fn(factorial);
+          if(typeof val === 'function'){ val = NaN; }
+          if(!isFinite(val)) return 'Error';
+          return (Math.round(val*1e12)/1e12).toString();
+        }catch(e){
+          return 'Error';
+        }
+      }
+      function update(){
+        exprEl.textContent = expr;
+        const out = evalExpr();
+        resEl.textContent = out;
+      }
+      function push(token){
+        if(token==='AC'){ expr=''; justEvaluated=false; update(); return; }
+        if(token==='DEL'){ expr=expr.slice(0,-1); update(); return; }
+        if(token==='='){ expr = evalExpr(); justEvaluated = true; update(); return; }
+        if(justEvaluated && /[0-9.]/.test(token)){
+          expr = token; justEvaluated=false; update(); return;
+        }
+        if(token==='x²'){ token = '^2'; }
+        if(token==='x³'){ token = '^3'; }
+        if(token==='1/x'){ token = '1/x'; }
+        expr += token; justEvaluated=false; update();
+      }
+      return {push, update};
+    }
+
+    // Hook basic
+    const basic = createCalc(document.getElementById('expr-basic'), document.getElementById('res-basic'));
+    document.querySelectorAll('#panel-basic .btn').forEach(b=>{
+      b.addEventListener('click',()=> basic.push(b.dataset.key));
+    });
+
+    // Hook scientific
+    const sci = createCalc(document.getElementById('expr-sci'), document.getElementById('res-sci'));
+    document.querySelectorAll('#panel-scientific .btn').forEach(b=>{
+      b.addEventListener('click',()=> sci.push(b.dataset.key));
+    });
+
+    // Keyboard support (for the active panel only; maps to scientific by default)
+    document.addEventListener('keydown', (e)=>{
+      const keyMap = { '/':'÷', '*':'×', 'Enter':'=', 'Backspace':'DEL' };
+      const k = keyMap[e.key] || e.key;
+      const panel = document.querySelector('.panel.active');
+      const targetCalc = panel.id==='panel-basic' ? basic : sci;
+      if(/^[0-9.+\-*/()%^]$/.test(k) || ['Enter','Backspace'].includes(e.key)){
+        e.preventDefault();
+        targetCalc.push(k);
+      }
+    });
+
+    /******************** Converters ********************/
+    const categories = {
+      length: {
+        base: 'm',
+        units: { mm:1e-3, cm:1e-2, m:1, km:1e3, in:0.0254, ft:0.3048, yd:0.9144, mi:1609.344 }
+      },
+      weight: {
+        base: 'g',
+        units: { mg:1e-3, g:1, kg:1e3, t:1e6, oz:28.349523125, lb:453.59237 }
+      },
+      temperature: {
+        base: 'C',
+        units: ['C','F','K']
+      },
+      speed: {
+        base: 'm/s',
+        units: { 'm/s':1, 'km/h':(1000/3600), mph:0.44704, knot:0.514444 }
+      },
+      area: {
+        base: 'm²',
+        units: { 'mm²':1e-6, 'cm²':1e-4, 'm²':1, 'km²':1e6, 'in²':0.00064516, 'ft²':0.09290304, 'yd²':0.83612736, acre:4046.8564224, hectare:10000 }
+      },
+      volume: {
+        base: 'L',
+        units: { mL:1e-3, L:1, 'm³':1000, 'in³':0.016387064, 'ft³':28.316846592, 'gal(US)':3.785411784 }
+      },
+      time: {
+        base: 's',
+        units: { ms:1e-3, s:1, min:60, h:3600, day:86400, week:604800 }
+      }
+    };
+
+    const chips = document.querySelectorAll('#category-chips .chip');
+    const unitFrom = document.getElementById('unit-from');
+    const unitTo = document.getElementById('unit-to');
+    const valFrom = document.getElementById('val-from');
+    const valTo = document.getElementById('val-to');
+    const swapBtn = document.getElementById('swap');
+    let currentCat = 'length';
+
+    function fillUnits(){
+      unitFrom.innerHTML = '';
+      unitTo.innerHTML = '';
+      const cat = categories[currentCat];
+      if(currentCat==='temperature'){
+        ['C','F','K'].forEach(u=>{
+          unitFrom.add(new Option(u,u)); unitTo.add(new Option(u,u));
+        });
+      }else{
+        Object.keys(cat.units).forEach(u=>{ unitFrom.add(new Option(u,u)); unitTo.add(new Option(u,u)); });
+      }
+      unitFrom.value = Object.keys(currentCat==='temperature'?{C:0,F:0,K:0}:categories[currentCat].units)[0];
+      unitTo.value = Object.keys(currentCat==='temperature'?{C:0,F:0,K:0}:categories[currentCat].units)[1] || unitFrom.value;
+      convert();
+    }
+
+    function convTemperature(v, from, to){
+      let c;
+      if(from==='C') c = v; else if(from==='F') c = (v-32)*5/9; else if(from==='K') c = v-273.15;
+      let out;
+      if(to==='C') out = c; else if(to==='F') out = c*9/5+32; else if(to==='K') out = c+273.15;
+      return out;
+    }
+
+    function convert(){
+      const v = parseFloat(valFrom.value || '0');
+      if(currentCat==='temperature'){
+        valTo.textContent = format(convTemperature(v, unitFrom.value, unitTo.value));
+        return;
+      }
+      const map = categories[currentCat].units;
+      const baseVal = v * map[unitFrom.value];
+      const out = baseVal / map[unitTo.value];
+      valTo.textContent = format(out);
+    }
+
+    function format(n){
+      if(!isFinite(n)) return 'Error';
+      const abs = Math.abs(n);
+      if(abs!==0 && (abs<1e-6 || abs>=1e9)) return n.toExponential(6);
+      return (Math.round(n*1e12)/1e12).toString();
+    }
+
+    chips.forEach(c=>c.addEventListener('click',()=>{
+      chips.forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+      currentCat = c.dataset.cat;
+      fillUnits();
+    }));
+    [unitFrom, unitTo].forEach(s=>s.addEventListener('change', convert));
+    valFrom.addEventListener('input', convert);
+    swapBtn.addEventListener('click', ()=>{
+      const a = unitFrom.value; unitFrom.value = unitTo.value; unitTo.value = a; convert();
+    });
+
+    fillUnits();
+
+    // Accessibility: focus ring
+    document.querySelectorAll('button, .btn, .chip, select, input').forEach(el=>{
+      el.addEventListener('focus',()=> el.style.outline = '2px solid rgba(124,58,237,.6)');
+      el.addEventListener('blur',()=> el.style.outline = 'none');
+    });
+  </script>
+</body>
+</html>
