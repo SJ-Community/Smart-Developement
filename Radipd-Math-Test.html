@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Math Rapid Quiz — Responsive (Progress Fixed)</title>
+<style>
+  :root{
+    --bg1:#081234; --bg2:#0b3d91; --card:#0e1530; --accent:#ffb703; --muted:#cbd5e1;
+    --max-width:980px;
+  }
+  *{box-sizing:border-box;font-family:Inter, Arial, sans-serif}
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#fff}
+  .wrap{max-width:var(--max-width);margin:24px auto;padding:16px}
+  header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
+  h1{font-size:20px;margin:0}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  label.small{font-size:13px;color:var(--muted);margin-right:6px}
+  select,button{padding:8px 10px;border-radius:10px;border:0;background:var(--card);color:var(--muted)}
+  button.primary{background:linear-gradient(180deg,var(--accent),#f57f17);color:#051025;font-weight:700;border:0}
+  .card{background:rgba(255,255,255,0.02);padding:16px;border-radius:12px;box-shadow:0 8px 28px rgba(2,6,23,0.6)}
+  .intro p{color:var(--muted);margin:8px 0 12px}
+  .section{margin-top:14px}
+  .question{background:rgba(255,255,255,0.02);padding:14px;border-radius:10px;margin:12px 0;font-size:18px;line-height:1.4}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .opt{background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.03);user-select:none}
+  .opt:active{transform:translateY(1px)}
+  .opt.correct{outline:3px solid rgba(13, 243, 98, 0.651)}
+  .opt.wrong{outline:3px solid rgba(240, 6, 6, 0.841)}
+  .meta{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-top:10px;color:var(--muted);gap:8px}
+  .small{font-size:13px;color:var(--muted)}
+  .controls .small{margin:0}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap}
+  /* responsive */
+  @media (max-width:880px){
+    .question{font-size:16px}
+    header{padding-bottom:6px}
+  }
+  @media (max-width:640px){
+    .wrap{padding:12px}
+    .opts{grid-template-columns:1fr}
+    .question{font-size:15px}
+    .controls{gap:8px}
+    select,button{padding:10px 12px}
+  }
+  .opt{padding:14px}
+  .small-btn{padding:8px 12px;border-radius:8px;border:0;background:var(--card);color:var(--muted);cursor:pointer;margin-right:8px}
+
+  /* Custom modal */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .18s}
+  .modal-backdrop.show{opacity:1;pointer-events:auto}
+  .modal{background:#071127;color:#fff;padding:18px;border-radius:12px;max-width:520px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.03)}
+  .modal h3{margin:0 0 6px;font-size:18px}
+  .modal p{margin:6px 0;color:var(--muted)}
+  .modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+  .modal button{padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
+  .btn-yes{background:linear-gradient(180deg,#34d399,#10b981);color:#021;}
+  .btn-no{background:var(--card);color:var(--muted)}
+
+  /* Finish overlay with tick animation */
+  .finish-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(2,6,23,0.6),rgba(2,6,23,0.85));z-index:10000;opacity:0;pointer-events:none;transition:opacity .2s}
+  .finish-overlay.show{opacity:1;pointer-events:auto}
+  .finish-card{background:transparent;color:#fff;padding:18px;border-radius:14px;text-align:center}
+  .tick-wrap{width:180px;height:180px;margin:auto;position:relative}
+  .tick-svg{width:100%;height:100%}
+  .tick-text{margin-top:14px;font-size:18px}
+  .score-text{margin-top:6px;font-size:20px;font-weight:700}
+  .winning-text{margin-top:6px;color:#c7f9d4}
+  /* animate circle stroke */
+  .circle-path{stroke-dasharray: 440; stroke-dashoffset: 440; transition: stroke-dashoffset 1s ease-out;}
+  .circle-path.drawn{stroke-dashoffset: 0;}
+  /* tick path animation */
+  .tick-path{stroke-dasharray: 120; stroke-dashoffset: 120; transition: stroke-dashoffset .6s .4s ease-out;}
+  .tick-path.drawn{stroke-dashoffset: 0;}
+
+  /* Question progress bar */
+  .qbar-wrap{height:10px;background:rgba(255,255,255,0.03);border-radius:20px;overflow:hidden;margin:10px 0}
+  .qbar-fill{height:100%;width:0%;background:linear-gradient(90deg,#ffb703,#f57f17);transition:width .35s ease}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Math Rapid Quiz — Class 6 to 10</h1>
+    <div class="controls" aria-hidden="false">
+      <label class="small" for="lang">Language</label>
+      <select id="lang" aria-label="Language">
+        <option value="en">English</option>
+        <option value="hi">हिन्दी</option>
+      </select>
+
+      <label class="small" for="classSelect">Class</label>
+      <select id="classSelect" aria-label="Class">
+        <option value="6">Class 6</option>
+        <option value="7">Class 7</option>
+        <option value="8">Class 8</option>
+        <option value="9">Class 9</option>
+        <option value="10">Class 10</option>
+      </select>
+
+      <label class="small" for="timeSelect">Rapid Time</label>
+      <select id="timeSelect" aria-label="Rapid time">
+        <option value="60">1 minute</option>
+        <option value="120">2 minutes</option>
+        <option value="180" selected>3 minutes</option>
+      </select>
+    </div>
+  </header>
+
+  <section class="card intro" id="intro">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div style="flex:1;min-width:220px">
+        <div style="font-weight:700;font-size:18px" id="welcome">Sharpen your math — play fast!</div>
+        <p id="desc">Choose class & language. Each class stores 50 challenging questions — each play uses 10 random questions. Timer is total quiz time (1/2/3 minutes).</p>
+        <div style="margin-top:8px" class="btn-row">
+          <button class="primary" id="startBtn">Start Quiz</button>
+          
+        </div>
+        <div class="small" style="margin-top:8px">Tip: Use 1–4 keys to answer, or tap choices on mobile. Timer auto-advances.</div>
+      </div>
+
+      <div style="min-width:200px;text-align:right">
+        <div class="small">Questions stored per class: <strong>50</strong></div>
+        <div class="small">Questions per play: <strong>10</strong></div>
+        <div class="small">Offline — no images, no external links</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card section" id="quizArea" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <div class="small" id="qIndex">1 / 10</div>
+      <div style="flex:1;min-width:180px">
+        <!-- QUESTION progress bar (fills per question) -->
+        <div class="qbar-wrap"><div id="qbarFill" class="qbar-fill" style="width:0%"></div></div>
+      </div>
+      <div class="small" id="qTimer">180s</div>
+    </div>
+
+    <div class="question" id="questionText" aria-live="polite">Question appears here</div>
+    <div class="opts" id="options" role="list"></div>
+
+    <div class="meta">
+      <div class="small">Score: <strong id="score">0</strong></div>
+      <div class="btn-row">
+        <button id="skipBtn">Skip</button>
+        <button id="quitBtn">Quit</button>
+      </div>
+    </div>
+
+    <div id="result" style="display:none;margin-top:12px;padding:10px;background:rgba(255,255,255,0.02);border-radius:8px"></div>
+  </section>
+</div>
+
+<!-- Custom modal (used for alerts & confirms) -->
+<div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" style="display:none">
+  <div class="modal" role="document" id="modalBox">
+    <h3 id="modalTitle">Message</h3>
+    <p id="modalMessage"></p>
+    <div class="actions" id="modalActions">
+      <!-- buttons injected dynamically -->
+    </div>
+  </div>
+</div>
+
+<!-- Finish overlay with tick animation -->
+<div id="finishOverlay" class="finish-overlay" aria-hidden="true" role="status">
+  <div class="finish-card">
+    <div class="tick-wrap" aria-hidden="true">
+      <svg class="tick-svg" viewBox="0 0 120 120" role="img" aria-label="Success tick">
+        <!-- circle -->
+        <circle cx="60" cy="60" r="52" fill="none" stroke="#34d399" stroke-width="4" class="circle-path" id="circlePath" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.95"></circle>
+        <!-- tick -->
+        <path d="M34 62 L52 80 L88 44" fill="none" stroke="#34d399" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" class="tick-path" id="tickPath"></path>
+      </svg>
+    </div>
+    <div class="score-text" id="finalScoreDisplay">Score: 0 / 10</div>
+    <div class="winning-text" id="winningText">You did great!</div>
+    <div style="margin-top:12px">
+      <button class="small-btn" id="finishReplayBtn">Play again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===========================
+   Utilities & data container
+   =========================== */
+const randInt = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+const shuffle = arr => { for(let i=arr.length-1;i>0;i--){const j=randInt(0,i);[arr[i],arr[j]]=[arr[j],arr[i]]} return arr; }
+const el = id => document.getElementById(id);
+
+/* Modal helper: returns a Promise for confirm dialogs */
+const modalBackdrop = el('modalBackdrop');
+const modalTitle = el('modalTitle');
+const modalMessage = el('modalMessage');
+const modalActions = el('modalActions');
+
+function showModal({title='', message='', buttons=[{text:'OK', value:true}]}) {
+  return new Promise(resolve => {
+    modalTitle.textContent = title || '';
+    modalMessage.textContent = message || '';
+    modalActions.innerHTML = '';
+    buttons.forEach(btn=>{
+      const b = document.createElement('button');
+      b.textContent = btn.text;
+      b.className = btn.className || (btn.value === true ? 'btn-yes' : 'btn-no');
+      b.addEventListener('click', ()=>{
+        closeModal();
+        resolve(btn.value);
+      });
+      modalActions.appendChild(b);
+    });
+    modalBackdrop.style.display = 'flex';
+    setTimeout(()=> modalBackdrop.classList.add('show'), 10);
+  });
+}
+function closeModal(){
+  modalBackdrop.classList.remove('show');
+  setTimeout(()=> modalBackdrop.style.display = 'none', 180);
+}
+
+/* DATA container and helper to add questions */
+const DATA = {6:[],7:[],8:[],9:[],10:[]};
+function addQuestion(cls, q_en, q_hi, choices, ansIndex){
+  DATA[cls].push({q_en, q_hi, choices, answerIndex: ansIndex});
+}
+
+/* ===========================
+   Questions — Classes 6..10 (50 each)
+   (Handwritten + deterministic generated fillers)
+   =========================== */
+/* Class 6 (50) */
+addQuestion(6,"LCM of 12 and 15?","12 और 15 का LCM क्या है?",["60","30","45","90"],0);
+addQuestion(6,"What is 3/4 + 5/8? (as fraction)","3/4 + 5/8 क्या है? (भिन्न)",["11/8","13/8","7/8","9/8"],1);
+addQuestion(6,"If a=b and a=12, what is 3a - 2b?","यदि a=b और a=12, तो 3a - 2b क्या है?",["12","24","36","6"],0);
+addQuestion(6,"Smallest prime greater than 20?","20 से बड़ा सबसे छोटा अभाज्य कौन सा है?",["23","21","22","19"],0);
+addQuestion(6,"Area of rectangle 5.5 x 4 = ?","आयत का क्षेत्रफल 5.5 x 4 = ?",["22","20","24","18"],0);
+addQuestion(6,"If number divisible by 3 and 4, divisible by?","यदि संख्या 3 और 4 से विभाज्य है, तो यह किससे विभाज्य होगा?",["12","7","6","9"],0);
+addQuestion(6,"Simplify: 8 × (2 + 3) = ?","सरलीकरण करें: 8 × (2 + 3) = ?",["40","30","45","35"],0);
+addQuestion(6,"If 5 notebooks cost 125, 1 costs?","यदि 5 नोटबुक 125 में हैं, 1 की कीमत?",["25","20","30","15"],0);
+addQuestion(6,"GCD of 18 and 24?","18 और 24 का HCF (GCD) क्या है?",["6","12","3","9"],0);
+addQuestion(6,"Convert 2500 ml to liters","2500 मिलीलीटर = कितने लीटर?",["2.5 L","25 L","0.25 L","250 L"],0);
+addQuestion(6,"Find missing: 7, __, 19 (AP)","खोया हुआ भरें: 7, __, 19 (AP)",["13","12","14","11"],0);
+addQuestion(6,"Which is greater: 7/12 or 5/9?","कौन सा बड़ा है: 7/12 या 5/9?",["7/12","5/9","Equal","Can't say"],0);
+addQuestion(6,"Perimeter of square side 6 = ?","वर्ग का परिमाप, भुजा 6 = ?",["24","36","12","18"],0);
+addQuestion(6,"Solve: x + 7 = 15","हल करें: x + 7 = 15",["8","22","-8","7"],0);
+addQuestion(6,"If a=3, b=4, hypotenuse = ?","यदि a=3, b=4, कर्ण = ?",["5","6","7","4"],0);
+addQuestion(6,"Evaluate: 2^4","मान निकालें: 2^4",["16","8","12","24"],0);
+addQuestion(6,"What is 15% of 200?","200 का 15% कितना है?",["30","25","35","20"],0);
+addQuestion(6,"Round 3.786 to 2 decimals","3.786 को 2 दशमलव पर गोल करें",["3.79","3.78","3.80","3.70"],0);
+addQuestion(6,"If 9x=81, x=?","यदि 9x=81, x=?",["9","8","7","10"],0);
+addQuestion(6,"Median of 4,7,9,10,12","4,7,9,10,12 का माध्यिका क्या है?",["9","7","10","8"],0);
+addQuestion(6,"Perimeter of triangle sides 3,4,5 = ?","त्रिभुज के भुजाएँ 3,4,5 का परिमाप?",["12","15","10","9"],0);
+addQuestion(6,"1000 ÷ 25 = ?","1000 ÷ 25 = ?",["40","45","35","50"],0);
+addQuestion(6,"Half of 11/2 is?","11/2 का आधा क्या है?",["11/4","11/2","5.5","22/4"],0);
+addQuestion(6,"Which is odd: 234, 567, 890?","कौन विषम है: 234,567,890?",["567","234","890","None"],0);
+addQuestion(6,"Solve: 5 × ? = 45","हल करें: 5 × ? = 45",["9","8","10","7"],0);
+addQuestion(6,"If angles 40 and 60, third =?","यदि त्रिभुज के कोण 40 और 60 हैं, तीसरा कोण?",["80","90","70","100"],0);
+addQuestion(6,"Convert 3h30m to minutes","3 घंटे 30 मिनट = कितने मिनट?",["210","180","200","220"],0);
+addQuestion(6,"Which fraction equals 0.25?","कौन सा भिन्न 0.25 के बराबर है?",["1/4","1/3","2/5","3/4"],0);
+addQuestion(6,"LCM of 8 and 20?","8 और 20 का LCM क्या है?",["40","20","80","10"],0);
+addQuestion(6,"If multiple of 9, sum digits divisible by?","यदि संख्या 9 की गुना है, अंकों का योग किससे विभाज्य होगा?",["9","3","6","2"],0);
+addQuestion(6,"7 × 12 = ?","7 × 12 = ?",["84","72","94","96"],0);
+addQuestion(6,"Area of square side 7","भुजा 7 वाले वर्ग का क्षेत्रफल?",["49","14","28","56"],0);
+addQuestion(6,"If x=2, 4x^2 = ?","यदि x=2, 4x^2 =",["16","8","12","10"],0);
+addQuestion(6,"Which is prime: 27,29,33?","कौन अभाज्य है: 27,29,33?",["29","27","33","None"],0);
+addQuestion(6,"If 3 apples cost 90, 1 apple costs?","3 सेब 90 रुपये में हों, 1 की कीमत?",["30","20","25","35"],0);
+addQuestion(6,"(10-3) × 4 = ?","(10-3) × 4 = ?",["28","14","24","20"],0);
+addQuestion(6,"HCF of 14 and 21?","14 और 21 का HCF क्या है?",["7","14","21","3"],0);
+addQuestion(6,"Simplify: 18 ÷ 3 × 2","सरलीकरण करें: 18 ÷ 3 × 2",["12","6","24","9"],0);
+addQuestion(6,"Rectangle perimeter 18 width 3, length?","आयत परिमाप 18 चौड़ाई 3, लंबाई?",["6","9","3","12"],0);
+addQuestion(6,"Express 0.6 as fraction","0.6 को भिन्न में व्यक्त करें",["3/5","6/10","2/3","1/2"],0);
+addQuestion(6,"11 × 11 = ?","11 × 11 = ?",["121","111","132","101"],0);
+addQuestion(6,"If 4x = 20, x = ?","यदि 4x = 20, x =",["5","4","6","10"],0);
+addQuestion(6,"Which is even: 13,22,37?","कौन सम है: 13,22,37?",["22","13","37","None"],0);
+addQuestion(6,"If number ends 0, divisible by?","यदि संख्या 0 पर खत्म होती है, वह किससे विभाज्य?",["10","5","2","Both 2 & 5"],3);
+addQuestion(6,"Next number: 2,4,8,16,...","अगला संख्या क्या है: 2,4,8,16,...",["32","24","20","18"],0);
+
+/* Class 7 */
+addQuestion(7,"If ratio A:B = 3:5 and A+B=40, find B","यदि अनुपात A:B = 3:5 और A+B=40, B क्या होगा?",["25","15","24","30"],0);
+addQuestion(7,"Convert 0.375 to fraction","0.375 को भिन्न में बदलें",["3/8","37/100","7/16","1/4"],0);
+addQuestion(7,"What is 20% of 150?","150 का 20% कितना?",["30","20","40","25"],0);
+addQuestion(7,"Solve: 4x - 7 = 21","हल करें: 4x - 7 = 21",["7","6","8","5"],0);
+addQuestion(7,"Speed 60 km/h, distance in 2.5 h?","यदि गति 60 km/h, 2.5 घंटे में दूरी?",["150 km","120 km","130 km","160 km"],0);
+addQuestion(7,"If 5 workers take 20 days, 10 workers take?","5 कामगार 20 दिन लेते हैं, 10 कामगार कितने दिन लिए?",["10 days","20 days","15 days","8 days"],0);
+addQuestion(7,"Simplify: (3/4) ÷ (1/8)","सरलीकरण करें: (3/4) ÷ (1/8)",["6","3","2","24"],0);
+addQuestion(7,"Average of 12,15,20?","12,15,20 का औसत क्या है?",["15.67","14","16","12"],0);
+addQuestion(7,"Percentage increase 50 to 65?","50 से 65 तक प्रतिशत वृद्धि?",["30%","25%","15%","20%"],1);
+addQuestion(7,"Area circle r=7 (π=22/7)","r=7 वृत्त क्षेत्र (π=22/7)?",["154","77","308","88"],0);
+addQuestion(7,"Product 84, one is 7, other?","दो संख्याएँ गुणन 84 और एक 7 है, दूसरी?",["12","14","10","9"],0);
+addQuestion(7,"Solve 3(y+2)=18","हल करें: 3(y+2)=18",["4","6","2","8"],1);
+addQuestion(7,"If 4:5 = 32:x, x?","यदि 4:5 = 32:x, x क्या है?",["40","36","30","38"],0);
+addQuestion(7,"Simplify: 2^3 × 2^2","सरलीकरण करें: 2^3 × 2^2",["32","10","8","16"],3);
+addQuestion(7,"3h15m in minutes?","3 घंटे 15 मिनट = कितने मिनट?",["195","185","175","200"],0);
+addQuestion(7,"Simple interest 500 at 5% for 2 years?","साधारण ब्याज 2 वर्ष, 500 रूपये पर 5% = ?",["50","25","100","60"],0);
+addQuestion(7,"Mode of 2,3,3,4,5?","2,3,3,4,5 का मोड क्या है?",["3","2","4","5"],0);
+addQuestion(7,"Which greater 7/11 or 2/3?","कौन बड़ा है: 7/11 या 2/3?",["2/3","7/11","Equal","Can't say"],0);
+addQuestion(7,"LCM of 9 and 12?","9 और 12 का LCM क्या है?",["36","18","12","72"],0);
+addQuestion(7,"Angle center 90°, sector fraction?","यदि केंद्र कोण 90°, सेक्टर वृत्त का कितना भाग?",["1/4","1/2","1/3","1/6"],0);
+addQuestion(7,"Solve: x/5 = 9","हल करें: x/5 = 9",["45","41","40","50"],0);
+addQuestion(7,"HCF of 36 and 48?","36 और 48 का HCF क्या है?",["12","6","24","8"],0);
+addQuestion(7,"Ratio 2:3 total 250 larger?","2:3 अनुपात का योग 250 है, बड़ा कितना?",["150","100","125","140"],0);
+addQuestion(7,"7/12 to decimal (3 d.p.)","7/12 को दशमलव में (3 दशमलव)",["0.583","0.5833","0.58","0.586"],1);
+addQuestion(7,"Factor of 84?","कौन 84 का गुणक है?",["7","5","11","13"],0);
+addQuestion(7,"Sequence 4,9,14,19 ... next?","4,9,14,19,... अगला?",["24","25","23","22"],0);
+addQuestion(7,"If a:b=4:1 and a-b=36, a=?","यदि a:b=4:1 और a-b=36, a=?",["36","28","40","45"],2);
+addQuestion(7,"125 ÷ 0.25 = ?","125 ÷ 0.25 = ?",["500","125","50","625"],0);
+addQuestion(7,"(5×6)-(3×4) = ?","(5×6)-(3×4) =",["18","30","12","20"],0);
+addQuestion(7,"Perimeter rectangle 6 by 9","आयत परिमाप 6 x 9 =",["30","54","15","27"],0);
+addQuestion(7,"Probability 1/4 as percent?","घटना की संभावना 1/4 हो, प्रतिशत?",["25%","20%","50%","40%"],0);
+addQuestion(7,"Area triangle base10 height7 = ?","त्रिभुज का क्षेत्रफल (आधार 10 ऊँचाई 7) =",["35","17","70","20"],0);
+addQuestion(7,"Solve: 7x - 14 = 0","हल करें: 7x - 14 = 0",["2","0","14","-2"],0);
+addQuestion(7,"2500 g to kg?","2500 g = कितने kg?",["2.5 kg","25 kg","0.25 kg","250 kg"],0);
+addQuestion(7,"Which > 0.5: 0.45,0.51,0.5?","कौन सा दशमलव 0.5 से बड़ा है: 0.45,0.51,0.5?",["0.51","0.45","0.5","None"],0);
+addQuestion(7,"9×9 - 8×8 = ?","9×9 - 8×8 =",["17","1","81","16"],0);
+addQuestion(7,"If 3x=21 then x=?","यदि 3x=21 तो x=?",["7","6","8","5"],0);
+addQuestion(7,"Average 5,10,15,20,25?","5,10,15,20,25 का औसत?",["15","14","16","20"],0);
+addQuestion(7,"If 30% of a =15, a=?","यदि a का 30% = 15, a क्या है?",["50","45","60","40"],0);
+addQuestion(7,"Square area 81 side = ?","वर्ग का क्षेत्रफल 81 है, भुजा?",["9","8","7","10"],0);
+
+/* Generates up to 50 items as needed for each class (deterministic fillers) */
+(function fillTo50(cls){
+  while(DATA[cls].length < 50){
+    const idx = DATA[cls].length + 1;
+    const a = (cls*idx)%37 + 2;
+    const b = (cls*idx*2)%31 + 1;
+    const prod = a*b;
+    const q_en = `Compute ${a} × ${b}`;
+    const q_hi = `${a} × ${b} क्या होगा?`;
+    const choices = [prod, prod + (idx%5)+1, Math.max(1,prod - ((idx%4)+1)), prod + ((idx%3)+2)];
+    shuffle(choices);
+    const ansIndex = choices.indexOf(prod);
+    DATA[cls].push({q_en,q_hi,choices,answerIndex:ansIndex});
+  }
+})(6);
+
+/* Class 8 */
+addQuestion(8,"Solve for x: 2x + 5 = 17","x के लिए हल करें: 2x + 5 = 17",["6","7","5","8"],0);
+addQuestion(8,"Triangle sides 5,12,13 right-angled?","5,12,13 भुजाएँ समकोण त्रिभुज हैं?",["Yes","No","Maybe","Can't say"],0);
+addQuestion(8,"Area triangle base10 height6 = ?","त्रिभुज क्षेत्रफल आधार 10 ऊँचाई 6 =",["30","60","16","20"],0);
+addQuestion(8,"Solve: (x/3)+4=10","हल करें: (x/3) + 4 = 10",["18","12","14","24"],0);
+addQuestion(8,"Ratio 7:3 total200 larger?","अनुपात 7:3 और कुल 200, बड़ा कितना?",["140","60","100","120"],0);
+addQuestion(8,"sqrt(256) = ?","256 का वर्गमूल क्या है?",["16","14","18","12"],0);
+addQuestion(8,"Circumference r=7 (π=22/7)?","r=7 परिमाप (π=22/7)?",["44","88","22","28"],0);
+addQuestion(8,"Solve: 3(y-2)=12","y के लिए हल: 3(y - 2) = 12",["6","4","5","3"],0);
+addQuestion(8,"4^3 = ?","4^3 = ?",["64","16","48","256"],0);
+addQuestion(8,"5/16 as decimal (3 d.p.)","5/16 को दशमलव (3 d.p.)",["0.312","0.313","0.32","0.31"],0);
+addQuestion(8,"Factor of 210?","कौन 210 का गुणनखंड है?",["7","11","13","17"],0);
+addQuestion(8,"Two angles 50 and 60 third?","दो कोण 50 और 60 हैं, तीसरा कोण?",["70","80","90","60"],0);
+addQuestion(8,"Solve: 5x = 3x + 14","हल करें: 5x = 3x + 14",["7","6","8","14"],0);
+addQuestion(8,"LCM of 14 and 16?","14 और 16 का LCM क्या है?",["112","28","56","224"],0);
+addQuestion(8,"Mean of 3,5,7,9 = ?","3,5,7,9 का माध्य क्या?",["6","5","7","9"],0);
+addQuestion(8,"Coin toss head probability?","सिक्का उछाल में हेड की संभावना?",["1/2","1/3","1/4","1"],0);
+addQuestion(8,"Simplify: (x+2)-(2x-3)","सरलीकरण: (x + 2) - (2x - 3) =",["5 - x","x + 5","-x -1","x -1"],0);
+addQuestion(8,"Area square 121 side?","यदि वर्ग क्षेत्र 121 है, भुजा?",["11","12","10","9"],0);
+addQuestion(8,"Solve 7 - 2(3 - x) = 1","7 - 2(3 - x) = 1, x=?",["2","1","3","4"],0);
+addQuestion(8,"Sum first 10 naturals","पहले 10 प्राकृतिक संख्याओं का योग?",["55","50","45","60"],0);
+addQuestion(8,"Scale 1:100, 3 cm equals?","स्केल 1:100, 3 cm वस्तु वास्तविक?",["3 m","30 m","300 cm","0.3 m"],0);
+addQuestion(8,"If x^2 = 49, x = ?","यदि x^2 = 49, x = ?",["±7","7","-7","0"],0);
+addQuestion(8,"Area circle r=3 (π=3.14)","r=3 वृत्त क्षेत्र (π=3.14)",["28.26","18.84","9","37.68"],0);
+addQuestion(8,"12 ÷ (2×3) = ?","12 ÷ (2×3) = ?",["2","1","4","6"],0);
+addQuestion(8,"If 3x+4y=24 and x=4, y=?","यदि 3x+4y=24 और x=4, y=?",["3","4","2","5"],0);
+addQuestion(8,"HCF of 48 and 180?","48 और 180 का HCF क्या?",["12","6","24","36"],0);
+addQuestion(8,"Multiple of 13?","कौन 13 का गुणज है?",["26","25","39","Both 26 & 39"],3);
+addQuestion(8,"2.75 as fraction?","2.75 को भिन्न में",["11/4","2 3/4","Both same","22/8"],2);
+addQuestion(8,"If angles equal triangle is?","यदि कोण समान हैं, त्रिभुज?",["Equilateral","Isosceles","Scalene","Right"],0);
+addQuestion(8,"15 × 14 = ?","15 × 14 = ?",["210","200","220","205"],0);
+addQuestion(8,"If 60% of x = 90, x = ?","यदि x का 60% = 90, x?",["150","140","120","160"],0);
+addQuestion(8,"Equilateral triangle perimeter 36 side?","समभुज त्रिभुज परिमाप 36, भुजा?",["12","9","18","6"],0);
+addQuestion(8,"Median of 1,3,7,9,11","1,3,7,9,11 का माध्यिका",["7","5","6","8"],0);
+addQuestion(8,"If 8x - 5 = 3, x = ?","यदि 8x -5 =3, x=?",["1","2","3","0"],1);
+addQuestion(8,"Sum angles quadrilateral?","चतुर्भुज के भीतर कोणों का योग?",["360°","180°","270°","540°"],0);
+addQuestion(8,"If a:b = 5:2 and a=25, b=?","यदि a:b=5:2 और a=25, b=?",["10","12","9","8"],0);
+addQuestion(8,"9! / 8! = ?","9! / 8! = ?",["9","8","72","1"],0);
+addQuestion(8,"Solve: 2(x-3)=10","2(x-3)=10, x=?",["8","7","6","5"],0);
+
+/* Fillers for classes 8..10 to reach 50 */
+(function fillTo50(cls){
+  while(DATA[cls].length < 50){
+    const idx = DATA[cls].length + 1;
+    const a = (cls*idx)%43 + 2;
+    const b = (cls*idx*5)%37 + 1;
+    const prod = a*b;
+    const q_en = `Compute ${a} × ${b}`;
+    const q_hi = `${a} × ${b} क्या होगा?`;
+    const choices = [prod, prod + (idx%6)+1, Math.max(1,prod - ((idx%4)+1)), prod + ((idx%3)+2)];
+    shuffle(choices);
+    const ansIndex = choices.indexOf(prod);
+    DATA[cls].push({q_en,q_hi,choices,answerIndex:ansIndex});
+  }
+})(8);
+
+/* Class 9 */
+addQuestion(9,"Roots of x^2 - 5x + 6 = 0?","x^2 -5x +6 = 0 के मूल?",["2 and 3","1 and 6","-2 and -3","3 and 2"],0);
+addQuestion(9,"Slope of line through (1,2) and (4,8)?","(1,2) और (4,8) से गुजरने वाली रेखा का ढलान?",["2","3","6","1"],1);
+addQuestion(9,"Area triangle with (0,0),(4,0),(0,3)?","(0,0),(4,0),(0,3) का त्रिभुज क्षेत्रफल?",["6","12","7","24"],0);
+addQuestion(9,"Discriminant 0 means?","डिस्क्रिमिनेंट 0 होने पर क्या?",["Equal roots","No real root","Two distinct roots","None"],0);
+addQuestion(9,"If P(A)=1/5, P(not A)=?","घटना A की संभावना 1/5, नहीं A की?",["4/5","1/5","2/5","3/5"],0);
+addQuestion(9,"Solve x^2 = 49","x^2 = 49 का हल",["±7","7","-7","0"],0);
+addQuestion(9,"Equation of y-axis?","y-अक्ष की समीकरण क्या है?",["x = 0","y = 0","x = 1","y = 1"],0);
+addQuestion(9,"Area circle = 314, π=3.14, r=?","वृत्त क्षेत्र 314, π=3.14, r?",["10","5","20","7"],0);
+addQuestion(9,"Mean of 2,5,8?","2,5,8 का औसत?",["5","4","6","7"],0);
+addQuestion(9,"Sum interior angles pentagon?","पैंटागन के अंदर के कोणों का योग?",["540°","360°","720°","180°"],0);
+addQuestion(9,"Solve 2x+3=11","2x+3=11, x=?",["4","3","5","2"],0);
+addQuestion(9,"In y=mx+c m is?","y=mx+c में m क्या है?",["slope","intercept","constant","axis"],0);
+addQuestion(9,"Distance between (1,1) & (4,5)?","(1,1) और (4,5) के बीच दूरी?",["5","4","6","7"],0);
+addQuestion(9,"Two dice outcomes?","दो पासे फेंके जाएँ, कुल परिणाम?",["36","12","6","18"],0);
+addQuestion(9,"Probability sum 7 with two dice?","दो पासे में जोड़ 7 आने की संभावना?",["6/36","1/6","1/2","5/36"],1);
+addQuestion(9,"If f(x)=2x+1, f(3)=?","f(x)=2x+1, f(3) = ?",["7","6","5","8"],0);
+addQuestion(9,"Area rectangle 12 by 7?","12 x 7 आयत क्षेत्रफल?",["84","60","72","90"],0);
+addQuestion(9,"Interior angle regular hexagon?","समभुज षट्भुज का आंतरिक कोण?",["120°","90°","60°","150°"],0);
+addQuestion(9,"Simplify x^2 - y^2 = ?","(x^2 - y^2) =",["(x-y)(x+y)","(x+y)^2","x^2 + y^2","(x-y)^2"],0);
+addQuestion(9,"AP 3,7,11,... 10th term?","AP 3,7,11,... का 10वाँ पद?",["39","40","38","37"],0);
+addQuestion(9,"Quadratic sum=5 product=6 equation?","मूलों का योग 5 और गुणन 6, समीकरण?",["x^2 -5x +6 = 0","x^2 +5x +6 = 0","x^2 -6x +5 =0","x^2 +6x +5 =0"],0);
+addQuestion(9,"15% of 200 = ?","200 का 15%?",["30","20","35","25"],0);
+addQuestion(9,"Parallel lines & transversal: corresponding angles?","समांतर रेखाएँ और ट्रांसवर्सल, समकक्ष कोण?",["Equal","Supplementary","Complementary","None"],0);
+addQuestion(9,"Median of 3,8,10,? is 9 missing?","3,8,10,? का माध्यिका 9 है, खोया?",["12","11","9","10"],0);
+addQuestion(9,"Solve 4(x-2)=12","4(x-2)=12, x=?",["5","4","6","3"],0);
+addQuestion(9,"y-intercept for line through (0,3)?","(0,3) से गुजरने वाली रेखा का y-प्रतिच्छेद?",["3","0","-3","1"],0);
+addQuestion(9,"Circumference 31.4 (π=3.14), r=?","परिमाप 31.4, π=3.14, r?",["5","10","2.5","7"],0);
+addQuestion(9,"Which greater 2/5 or 3/7?","कौन बड़ा: 2/5 या 3/7?",["2/5","3/7","Equal","Can't say"],0);
+addQuestion(9,"x^2 - 9 = 0, x = ?","x^2 -9 =0, x?",["±3","3","-3","0"],0);
+addQuestion(9,"Sum formula first n naturals?","पहले n प्राकृतिक संख्याओं का योग फॉर्मूला?",["n(n+1)/2","n^2","(n+1)^2","n(n-1)/2"],0);
+
+/* Fillers to reach 50 for class 9 */
+(function fillTo50(cls){
+  while(DATA[cls].length < 50){
+    const idx = DATA[cls].length + 1;
+    const a = (cls*idx)%41 + 2;
+    const b = (cls*idx*7)%33 + 1;
+    const prod = a*b;
+    const q_en = `Compute ${a} × ${b}`;
+    const q_hi = `${a} × ${b} क्या होगा?`;
+    const choices = [prod, prod + (idx%5)+1, Math.max(1,prod - ((idx%4)+1)), prod + ((idx%3)+2)];
+    shuffle(choices);
+    const ansIndex = choices.indexOf(prod);
+    DATA[cls].push({q_en,q_hi,choices,answerIndex:ansIndex});
+  }
+})(9);
+
+/* Class 10 */
+addQuestion(10,"Discriminant of x^2 - 4x + 3?","x^2 -4x +3 का डिस्क्रिमिनेंट क्या है?",["4","16","1","0"],0);
+addQuestion(10,"sin^2θ + cos^2θ = ?","sin^2θ + cos^2θ = ?",["1","0","sin2θ","cos2θ"],0);
+addQuestion(10,"Solve: 2x^2 - 8 = 0","2x^2 -8 =0, x?",["±2","2","-2","0"],0);
+addQuestion(10,"Distance formula for two points?","दो बिंदुओं के बीच दूरी का सूत्र?",["√((x2-x1)^2+(y2-y1)^2)","(x2-x1)+(y2-y1)","(x2+x1)^2","|x2-x1|+|y2-y1|"],0);
+addQuestion(10,"tan45° = ?","tan45° =",["1","0","√3","1/√3"],0);
+addQuestion(10,"Area trapezium bases10 & 6 height4","आधार 10 और 6, ऊँचाई 4, ट्रेपेज़ियम क्षेत्र=?",["32","16","64","40"],0);
+addQuestion(10,"Equal roots -> discriminant = ?","यदि द्विघात के समान मूल हों, डिस्क्रिमिनेंट?",["0",">0","<0","1"],0);
+addQuestion(10,"Slope of perpendicular to m is?","ढलान m वाली रेखा के लंबवत की ढलान?",["-1/m","1/m","m^2","-m"],0);
+addQuestion(10,"sin30° = ?","sin30° =",["1/2","√3/2","0.5","Both 1/2 and 0.5"],3);
+addQuestion(10,"Sum roots of (x-2)(x-3)=0 = ?","(x-2)(x-3)=0 के मूलों का योग?",["5","1","-5","6"],0);
+addQuestion(10,"Area circle r=14 (π=22/7)?","r=14 वृत्त क्षेत्र (π=22/7)?",["616","308","154","88"],0);
+addQuestion(10,"log10(100) = ?","log10(100) = ?",["2","10","100","1"],0);
+addQuestion(10,"sec0° = ?","sec0° = ?",["1","0","∞","-1"],0);
+addQuestion(10,"Solve: x^2 + 6x + 9 = 0","x^2 +6x +9 =0, x?",["-3","3","-9","0"],0);
+addQuestion(10,"Area square=256, diagonal = ?","वर्ग क्षेत्र 256, विकर्ण ?",["16√2","32","8√2","16"],0);
+addQuestion(10,"AM = GM when numbers are?","जब AM = GM संख्याएँ कैसी होंगी?",["All equal","All distinct","One zero","None"],0);
+addQuestion(10,"Sector 60° fraction of circle?","60° सेक्टर वृत्त का कितना भाग?",["1/6","1/4","1/3","1/5"],0);
+addQuestion(10,"Vertex of y=x^2 is?","y=x^2 का शीर्ष बिंदु?",["(0,0)","(1,1)","(0,1)","(-1,0)"],0);
+addQuestion(10,"AP first+last 22 avg11 terms?","AP का पहला+अंतिम =22 और औसत 11, पद संख्या?",["2","11","22","4"],0);
+addQuestion(10,"tan30° = ?","tan30° =",["1/√3","√3","1","0"],0);
+addQuestion(10,"Circle eqn center (0,0) radius r?","(0,0) केंद्र और त्रिज्या r का वृत्त समीकरण?",["x^2 + y^2 = r^2","x + y = r","x^2 - y^2 = r^2","x^2 + y = r"],0);
+addQuestion(10,"3x+4y=12, y when x=0?","3x + 4y = 12, x=0 पर y?",["3","4","0","-3"],0);
+addQuestion(10,"Probability prime from 1..10?","1..10 में से अभाज्य होने की संभावना?",["4/10","1/2","2/5","3/10"],2);
+addQuestion(10,"Expand (a+b)^2 = ?","(a+b)^2 का विस्तार?",["a^2 + 2ab + b^2","a^2 + b^2","a^2 - 2ab + b^2","2a^2 + 2b^2"],0);
+addQuestion(10,"cos60° = ?","cos60° =",["1/2","√3/2","0","1"],0);
+addQuestion(10,"Product of roots of x^2 -5x +6?","x^2 -5x +6 के मूलों का गुणन?",["6","5","-6","1"],0);
+addQuestion(10,"Slope of 2x+3y=6?","2x + 3y = 6 की ढलान?",["-2/3","2/3","3/2","-3/2"],0);
+addQuestion(10,"Sector θ=90°, r=7 (π=22/7) area?","θ=90°, r=7 सेक्टर क्षेत्र?",["38.5","77","19.25","44"],2);
+addQuestion(10,"Remainder theorem true?","(x-2) से विभाजित पर शेष = f(2) सत्य?",["True","False","Sometimes","None"],0);
+addQuestion(10,"Sum interior angles 12-gon?","12-कक्षित का अंदरूनी कोणों का योग?",["1800°","2000°","1440°","1320°"],2);
+addQuestion(10,"Average of 4,8,12,16 = ?","4,8,12,16 का औसत?",["10","12","8","9"],0);
+addQuestion(10,"Median of 3,5,7,9,11 = ?","3,5,7,9,11 का माध्यिका?",["7","6","5","9"],0);
+addQuestion(10,"Line through (2,-1) slope3 equation?","(2,-1) से गुजरने वाली ढलान 3 वाली रेखा समीकरण?",["y +1 = 3(x -2)","y -1 =3(x -2)","y = 3x -1","None"],0);
+
+/* Fill to 50 for class 10 */
+(function fillTo50(cls){
+  while(DATA[cls].length < 50){
+    const idx = DATA[cls].length + 1;
+    const a = (cls*idx)%47 + 2;
+    const b = (cls*idx*11)%43 + 1;
+    const prod = a*b;
+    const q_en = `Compute ${a} × ${b}`;
+    const q_hi = `${a} × ${b} क्या होगा?`;
+    const choices = [prod, prod + (idx%6)+1, Math.max(1,prod - ((idx%5)+1)), prod + ((idx%4)+2)];
+    shuffle(choices);
+    const ansIndex = choices.indexOf(prod);
+    DATA[cls].push({q_en,q_hi,choices,answerIndex:ansIndex});
+  }
+})(10);
+
+/* ===========================
+   App state & UI references
+   =========================== */
+let pool = [], current = 0, score = 0, total = 10;
+let timerId = null, timeLeft = 0, selectedLang = 'en', selectedTotalTime = 180;
+const startBtn = el('startBtn'), previewBtn = el('previewBtn'), skipBtn = el('skipBtn'), quitBtn = el('quitBtn');
+const finishOverlay = el('finishOverlay');
+const finishScoreDisplay = el('finalScoreDisplay'), finishWinText = el('winningText'), finishReplayBtn = el('finishReplayBtn');
+const qbarFill = el('qbarFill');
+
+/* Best score storage helpers (kept, but reset removed from UI) */
+function getBestKey(cls,lang){ return `mathquiz_best_${cls}_${lang}`; }
+function saveBest(cls,lang,sc){ const key=getBestKey(cls,lang); const prev=Number(localStorage.getItem(key)||0); if(sc>prev) localStorage.setItem(key,String(sc)); }
+function getBest(cls,lang){ return Number(localStorage.getItem(getBestKey(cls,lang))||0); }
+
+/* Language UI */
+function setLang(l){
+  selectedLang = l;
+  if(l === 'hi'){
+    el('welcome').textContent = 'गणित तेज़ — त्वरित क्विज़';
+    el('desc').textContent = 'कक्षा और भाषा चुनें। प्रत्येक कक्षा में 50 प्रश्न संग्रहीत हैं — हर खेल के लिए 10 चुने जाते हैं। समय कुल क्विज़ का है।';
+    startBtn.textContent = 'क्विज़ शुरू करें';
+    previewBtn.textContent = '5 नमूने';
+    skipBtn.textContent = 'छोड़ें';
+    quitBtn.textContent = 'बाहर जाएं';
+  } else {
+    el('welcome').textContent = 'Sharpen your math — play fast!';
+    el('desc').textContent = 'Choose class & language. Each class stores 50 questions — each play uses 10 random questions. Timer is total quiz time.';
+    startBtn.textContent = 'Start Quiz';
+
+    skipBtn.textContent = 'Skip';
+    quitBtn.textContent = 'Quit';
+  }
+}
+el('lang').addEventListener('change',(e)=> setLang(e.target.value));
+
+/* Start/preview */
+startBtn.addEventListener('click', startQuiz);
+
+
+/* Start quiz */
+function startQuiz(){
+  const cls = Number(el('classSelect').value);
+  selectedLang = el('lang').value;
+  selectedTotalTime = Number(el('timeSelect').value);
+  // pick 10 random
+  pool = shuffle(DATA[cls].slice()).slice(0,total);
+  current = 0; score = 0;
+  el('score').textContent = score;
+  // show intro -> quiz area
+  el('intro').style.display = 'none';
+  el('quizArea').style.display = 'block';
+  el('result').style.display = 'none';
+  timeLeft = selectedTotalTime;
+  el('qTimer').textContent = `${timeLeft}s`;
+  // reset question progress bar to 0%
+  qbarFill.style.width = '0%';
+  updateQuestion();
+  // timer
+  if(timerId) clearInterval(timerId);
+  timerId = setInterval(()=>{
+    timeLeft--;
+    el('qTimer').textContent = `${timeLeft}s`;
+    if(timeLeft <= 0){
+      clearInterval(timerId);
+      handleTimeExpired();
+    }
+  },1000);
+}
+
+/* When time runs out */
+async function handleTimeExpired(){
+  const extend = await showModal({
+    title: selectedLang==='hi'?'समय समाप्त':'Time\'s up',
+    message: selectedLang==='hi' ? 'समय समाप्त हो गया! क्या आप 3 मिनट और जोड़ना चाहते हैं?' : 'Your time is up! Do you want to add 3 more minutes?',
+    buttons: [
+      {text: selectedLang==='hi'?'हाँ (3 मिनट जोड़ें)':'Yes — add 3 min', value:true, className:'btn-yes'},
+      {text: selectedLang==='hi'?'नहीं':'No — Show results', value:false, className:'btn-no'}
+    ]
+  });
+  if(extend){
+    // add 3 minutes (180s)
+    timeLeft += 180;
+    selectedTotalTime += 180; // this doesn't affect qbar (question progress)
+    el('qTimer').textContent = `${timeLeft}s`;
+    // resume timer
+    if(timerId) clearInterval(timerId);
+    timerId = setInterval(()=>{
+      timeLeft--;
+      el('qTimer').textContent = `${timeLeft}s`;
+      if(timeLeft <= 0){
+        clearInterval(timerId);
+        finishQuiz();
+      }
+    },1000);
+  } else {
+    finishQuiz();
+  }
+}
+
+/* Update question UI and set question-progress bar to reflect number completed */
+function updateQuestion(){
+  if(current < 0 || current >= pool.length) return;
+  const item = pool[current];
+  el('qIndex').textContent = `${current+1} / ${total}`;
+  el('questionText').textContent = selectedLang==='hi' ? item.q_hi : item.q_en;
+  const opts = el('options'); opts.innerHTML = '';
+  // Set progress bar based on how many questions already completed (current completed)
+  const pctNow = Math.round((current / total) * 100);
+  qbarFill.style.width = pctNow + '%';
+  item.choices.forEach((c,i)=>{
+    const div = document.createElement('div');
+    div.className = 'opt';
+    div.tabIndex = 0;
+    div.textContent = `${String.fromCharCode(65+i)}. ${c}`;
+    div.addEventListener('click', ()=> choose(i));
+    div.addEventListener('keydown', (ev)=> { if(ev.key === 'Enter') choose(i); });
+    opts.appendChild(div);
+  });
+}
+
+/* choose answer */
+function choose(i){
+  const item = pool[current];
+  const opts = Array.from(el('options').children);
+  opts.forEach(o=> o.classList.remove('correct','wrong'));
+  if(i === item.answerIndex){
+    opts[i].classList.add('correct'); score++; el('score').textContent = score;
+  } else {
+    opts[i].classList.add('wrong');
+    if(opts[item.answerIndex]) opts[item.answerIndex].classList.add('correct');
+  }
+  // Immediately update question-progress bar to show this question completed
+  const pctAfter = Math.round(((current + 1) / total) * 100);
+  qbarFill.style.width = pctAfter + '%';
+  setTimeout(()=> nextQuestion(), 700);
+}
+
+/* Next */
+function nextQuestion(){
+  current++;
+  if(current >= total){
+    finishQuiz();
+  } else {
+    updateQuestion();
+  }
+}
+
+/* Skip */
+skipBtn.addEventListener('click', ()=> {
+  const item = pool[current];
+  const opts = Array.from(el('options').children);
+  if(opts[item.answerIndex]) opts[item.answerIndex].classList.add('correct');
+  // mark progress as completed for this question
+  const pctAfter = Math.round(((current + 1) / total) * 100);
+  qbarFill.style.width = pctAfter + '%';
+  setTimeout(()=> nextQuestion(), 500);
+});
+
+/* Quit (use custom modal) */
+quitBtn.addEventListener('click', async ()=>{
+  const confirmQuit = await showModal({title:selectedLang==='hi'?'पुष्टि':'Confirm', message:selectedLang==='hi'?'क्या आप क्विज़ छोड़ना चाहते हैं?':'Quit quiz?', buttons:[{text:selectedLang==='hi'?'हां':'Yes', value:true, className:'btn-yes'}, {text:selectedLang==='hi'?'नहीं':'No', value:false, className:'btn-no'}]});
+  if(confirmQuit){
+    clearInterval(timerId);
+    el('quizArea').style.display = 'none';
+    el('intro').style.display = 'block';
+    el('result').style.display = 'none';
+    // reset qbar
+    qbarFill.style.width = '0%';
+  }
+});
+
+/* Finish quiz: show animated tick overlay and results text */
+function finishQuiz(){
+  clearInterval(timerId);
+  // ensure qbar reaches 100%
+  qbarFill.style.width = '100%';
+  // save best
+  const cls = Number(el('classSelect').value);
+  saveBest(cls, selectedLang, score);
+  // prepare messages
+  finishScoreDisplay.textContent = `${selectedLang==='hi' ? 'स्कोर' : 'Score'}: ${score} / ${total}`;
+  // winning text based on score
+  let winText = '';
+  const pct = (score/total)*100;
+  if(pct >= 80) winText = selectedLang==='hi' ? 'शानदार! आपने बेहतरीन प्रदर्शन किया।' : 'Excellent! You performed brilliantly.';
+  else if(pct >= 50) winText = selectedLang==='hi' ? 'अच्छा किया! थोड़ी और प्रैक्टिस से और बेहतर होगा।' : 'Good job! A bit more practice and you\'ll be even better.';
+  else winText = selectedLang==='hi' ? 'कोशिश जारी रखें — अभ्यास से सुधार होगा।' : 'Keep trying — practice makes progress.';
+  finishWinText.textContent = winText;
+
+  // show overlay
+  finishOverlay.classList.add('show');
+  finishOverlay.setAttribute('aria-hidden','false');
+
+  // reset stroke-dash for animation then draw
+  const circle = document.getElementById('circlePath');
+  const tick = document.getElementById('tickPath');
+  circle.classList.remove('drawn');
+  tick.classList.remove('drawn');
+  setTimeout(()=> {
+    circle.classList.add('drawn');
+    tick.classList.add('drawn');
+  }, 50);
+}
+
+/* Finish overlay button */
+finishReplayBtn.addEventListener('click', ()=> { restartQuizFromOverlay(); });
+
+function restartQuizFromOverlay(){
+  finishOverlay.classList.remove('show');
+  finishOverlay.setAttribute('aria-hidden','true');
+  // reset UI to intro
+  el('intro').style.display = 'block';
+  el('quizArea').style.display = 'none';
+  el('result').style.display = 'none';
+  qbarFill.style.width = '0%';
+}
+
+/* Keyboard shortcuts */
+window.addEventListener('keydown', (e)=>{
+  if(el('quizArea').style.display === 'block'){
+    if(['1','2','3','4'].includes(e.key)){
+      const idx = Number(e.key) - 1;
+      const opts = el('options').children;
+      if(opts[idx]) opts[idx].click();
+    } else if(e.key === 's' || e.key === 'S'){
+      skipBtn.click();
+    }
+  }
+});
+
+/* Initialize language */
+setLang(el('lang').value);
+
+</script>
+</body>
+</html>
