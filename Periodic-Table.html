@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Periodic Table Puzzle — Canvas (Full)</title>
+<style>
+  :root{
+    --bg:#0b1116;
+    --hud:#0f1720;
+    --muted:#c9d7ea;
+  }
+  html,body{height:100%;margin:0;background:var(--bg);font-family:Inter,ui-sans-serif,system-ui,Arial}
+  #app { position:relative; width:100vw; height:100vh; display:block; }
+  canvas{ display:block; background: linear-gradient(180deg,#071016 0%, #08131a 100%); width:100%; height:100%;}
+  /* victory overlay (HTML) */
+  #overlay{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+  #modal{ pointer-events:auto; min-width:280px; max-width:560px; background: linear-gradient(180deg,#07131b,#0d2232); border-radius:14px; padding:20px; text-align:center; color:#eaf6ff; box-shadow:0 30px 70px #0008; border:1px solid rgba(255,255,255,0.06); display:none; }
+  #modal h2{ margin:6px 0 8px; font-size:20px; color:#7ee7b8;}
+  #modal p{ margin:6px 0 14px; color:#bcd4e8; font-size:14px;}
+  .btn{ background:#7c3aed; color:white; border:none; padding:10px 16px; border-radius:999px; font-weight:700; cursor:pointer; }
+  .btn.secondary{ background:#00c58e; margin-left:10px;}
+  #hudHtml{ position:absolute; left:12px; top:12px; color:#d6eaff; font-size:13px; display:flex; gap:10px; align-items:center; pointer-events:none; }
+  .hudBadge{ background: rgba(255,255,255,0.03); padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,0.04); pointer-events:auto;}
+  .hudBadge strong{ color:#7ee787; margin-left:6px;}
+  #hintBtn{ pointer-events:auto; margin-left:8px; }
+  @media (max-width:520px){ #modal{ width:88vw; } }
+
+  /* footer message */
+  footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(10,15,20,0.9);
+    color: #bcd4e8;
+    text-align: center;
+    font-size: 13px;
+    padding: 6px 10px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    z-index: 50;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="main"></canvas>
+  <!-- fireworks drawn on same canvas; HTML modal on top -->
+  <div id="overlay">
+    <div id="modal" role="dialog" aria-modal="true">
+      <div style="font-size:30px">🎉</div>
+      <h2>All elements placed — Well done!</h2>
+      <p id="finalStats">Score • Time</p>
+      <div style="display:flex; justify-content:center; gap:10px;">
+        <button id="restart" class="btn">Restart</button>
+        <button id="close" class="btn secondary">Close</button>
+      </div>
+    </div>
+  </div>
+  <div id="hudHtml" style="pointer-events:none">
+    <div class="hudBadge" style="pointer-events:auto" id="scoreHtml">Score: <strong>0</strong></div>
+    <div class="hudBadge">Placed: <strong id="placedHtml">0</strong>/118</div>
+    <div class="hudBadge">Time: <strong id="timeHtml">00:00</strong></div>
+    <div class="hudBadge" style="pointer-events:auto"><button id="hintBtn" class="btn" style="padding:6px 10px; font-size:13px;">Hint (-15)</button></div>
+  </div>
+</div>
+
+<!-- footer notice -->
+<footer>
+  ⚠️ This puzzle is best experienced on a desktop device.
+</footer>
+
+<script>
+const elements = [
+  {n:1,s:"H",r:1,c:1,cat:"nonmetal"},
+  {n:2,s:"He",r:1,c:18,cat:"noble"},
+  {n:3,s:"Li",r:2,c:1,cat:"alkali"},
+  {n:4,s:"Be",r:2,c:2,cat:"alkaline"},
+  {n:5,s:"B",r:2,c:13,cat:"metalloid"},
+  {n:6,s:"C",r:2,c:14,cat:"nonmetal"},
+  {n:7,s:"N",r:2,c:15,cat:"nonmetal"},
+  {n:8,s:"O",r:2,c:16,cat:"nonmetal"},
+  {n:9,s:"F",r:2,c:17,cat:"halogen"},
+  {n:10,s:"Ne",r:2,c:18,cat:"noble"},
+  {n:11,s:"Na",r:3,c:1,cat:"alkali"},
+  {n:12,s:"Mg",r:3,c:2,cat:"alkaline"},
+  {n:13,s:"Al",r:3,c:13,cat:"metal"},
+  {n:14,s:"Si",r:3,c:14,cat:"metalloid"},
+  {n:15,s:"P",r:3,c:15,cat:"nonmetal"},
+  {n:16,s:"S",r:3,c:16,cat:"nonmetal"},
+  {n:17,s:"Cl",r:3,c:17,cat:"halogen"},
+  {n:18,s:"Ar",r:3,c:18,cat:"noble"},
+  {n:19,s:"K",r:4,c:1,cat:"alkali"},
+  {n:20,s:"Ca",r:4,c:2,cat:"alkaline"},
+  {n:21,s:"Sc",r:4,c:3,cat:"transition"},
+  {n:22,s:"Ti",r:4,c:4,cat:"transition"},
+  {n:23,s:"V",r:4,c:5,cat:"transition"},
+  {n:24,s:"Cr",r:4,c:6,cat:"transition"},
+  {n:25,s:"Mn",r:4,c:7,cat:"transition"},
+  {n:26,s:"Fe",r:4,c:8,cat:"transition"},
+  {n:27,s:"Co",r:4,c:9,cat:"transition"},
+  {n:28,s:"Ni",r:4,c:10,cat:"transition"},
+  {n:29,s:"Cu",r:4,c:11,cat:"transition"},
+  {n:30,s:"Zn",r:4,c:12,cat:"transition"},
+  {n:31,s:"Ga",r:4,c:13,cat:"metal"},
+  {n:32,s:"Ge",r:4,c:14,cat:"metalloid"},
+  {n:33,s:"As",r:4,c:15,cat:"metalloid"},
+  {n:34,s:"Se",r:4,c:16,cat:"nonmetal"},
+  {n:35,s:"Br",r:4,c:17,cat:"halogen"},
+  {n:36,s:"Kr",r:4,c:18,cat:"noble"},
+  {n:37,s:"Rb",r:5,c:1,cat:"alkali"},
+  {n:38,s:"Sr",r:5,c:2,cat:"alkaline"},
+  {n:39,s:"Y",r:5,c:3,cat:"transition"},
+  {n:40,s:"Zr",r:5,c:4,cat:"transition"},
+  {n:41,s:"Nb",r:5,c:5,cat:"transition"},
+  {n:42,s:"Mo",r:5,c:6,cat:"transition"},
+  {n:43,s:"Tc",r:5,c:7,cat:"transition"},
+  {n:44,s:"Ru",r:5,c:8,cat:"transition"},
+  {n:45,s:"Rh",r:5,c:9,cat:"transition"},
+  {n:46,s:"Pd",r:5,c:10,cat:"transition"},
+  {n:47,s:"Ag",r:5,c:11,cat:"transition"},
+  {n:48,s:"Cd",r:5,c:12,cat:"transition"},
+  {n:49,s:"In",r:5,c:13,cat:"metal"},
+  {n:50,s:"Sn",r:5,c:14,cat:"metal"},
+  {n:51,s:"Sb",r:5,c:15,cat:"metalloid"},
+  {n:52,s:"Te",r:5,c:16,cat:"metalloid"},
+  {n:53,s:"I",r:5,c:17,cat:"halogen"},
+  {n:54,s:"Xe",r:5,c:18,cat:"noble"},
+  {n:55,s:"Cs",r:6,c:1,cat:"alkali"},
+  {n:56,s:"Ba",r:6,c:2,cat:"alkaline"},
+  {n:57,s:"La",r:9,c:3,cat:"lanthanoid"},
+  {n:58,s:"Ce",r:9,c:4,cat:"lanthanoid"},
+  {n:59,s:"Pr",r:9,c:5,cat:"lanthanoid"},
+  {n:60,s:"Nd",r:9,c:6,cat:"lanthanoid"},
+  {n:61,s:"Pm",r:9,c:7,cat:"lanthanoid"},
+  {n:62,s:"Sm",r:9,c:8,cat:"lanthanoid"},
+  {n:63,s:"Eu",r:9,c:9,cat:"lanthanoid"},
+  {n:64,s:"Gd",r:9,c:10,cat:"lanthanoid"},
+  {n:65,s:"Tb",r:9,c:11,cat:"lanthanoid"},
+  {n:66,s:"Dy",r:9,c:12,cat:"lanthanoid"},
+  {n:67,s:"Ho",r:9,c:13,cat:"lanthanoid"},
+  {n:68,s:"Er",r:9,c:14,cat:"lanthanoid"},
+  {n:69,s:"Tm",r:9,c:15,cat:"lanthanoid"},
+  {n:70,s:"Yb",r:9,c:16,cat:"lanthanoid"},
+  {n:71,s:"Lu",r:9,c:17,cat:"lanthanoid"},
+  {n:72,s:"Hf",r:6,c:4,cat:"transition"},
+  {n:73,s:"Ta",r:6,c:5,cat:"transition"},
+  {n:74,s:"W",r:6,c:6,cat:"transition"},
+  {n:75,s:"Re",r:6,c:7,cat:"transition"},
+  {n:76,s:"Os",r:6,c:8,cat:"transition"},
+  {n:77,s:"Ir",r:6,c:9,cat:"transition"},
+  {n:78,s:"Pt",r:6,c:10,cat:"transition"},
+  {n:79,s:"Au",r:6,c:11,cat:"transition"},
+  {n:80,s:"Hg",r:6,c:12,cat:"transition"},
+  {n:81,s:"Tl",r:6,c:13,cat:"metal"},
+  {n:82,s:"Pb",r:6,c:14,cat:"metal"},
+  {n:83,s:"Bi",r:6,c:15,cat:"metal"},
+  {n:84,s:"Po",r:6,c:16,cat:"metalloid"},
+  {n:85,s:"At",r:6,c:17,cat:"halogen"},
+  {n:86,s:"Rn",r:6,c:18,cat:"noble"},
+  {n:87,s:"Fr",r:7,c:1,cat:"alkali"},
+  {n:88,s:"Ra",r:7,c:2,cat:"alkaline"},
+  {n:89,s:"Ac",r:10,c:3,cat:"actinoid"},
+  {n:90,s:"Th",r:10,c:4,cat:"actinoid"},
+  {n:91,s:"Pa",r:10,c:5,cat:"actinoid"},
+  {n:92,s:"U",r:10,c:6,cat:"actinoid"},
+  {n:93,s:"Np",r:10,c:7,cat:"actinoid"},
+  {n:94,s:"Pu",r:10,c:8,cat:"actinoid"},
+  {n:95,s:"Am",r:10,c:9,cat:"actinoid"},
+  {n:96,s:"Cm",r:10,c:10,cat:"actinoid"},
+  {n:97,s:"Bk",r:10,c:11,cat:"actinoid"},
+  {n:98,s:"Cf",r:10,c:12,cat:"actinoid"},
+  {n:99,s:"Es",r:10,c:13,cat:"actinoid"},
+  {n:100,s:"Fm",r:10,c:14,cat:"actinoid"},
+  {n:101,s:"Md",r:10,c:15,cat:"actinoid"},
+  {n:102,s:"No",r:10,c:16,cat:"actinoid"},
+  {n:103,s:"Lr",r:10,c:17,cat:"actinoid"},
+  {n:104,s:"Rf",r:7,c:4,cat:"transition"},
+  {n:105,s:"Db",r:7,c:5,cat:"transition"},
+  {n:106,s:"Sg",r:7,c:6,cat:"transition"},
+  {n:107,s:"Bh",r:7,c:7,cat:"transition"},
+  {n:108,s:"Hs",r:7,c:8,cat:"transition"},
+  {n:109,s:"Mt",r:7,c:9,cat:"transition"},
+  {n:110,s:"Ds",r:7,c:10,cat:"transition"},
+  {n:111,s:"Rg",r:7,c:11,cat:"transition"},
+  {n:112,s:"Cn",r:7,c:12,cat:"transition"},
+  {n:113,s:"Nh",r:7,c:13,cat:"metal"},
+  {n:114,s:"Fl",r:7,c:14,cat:"metal"},
+  {n:115,s:"Mc",r:7,c:15,cat:"metal"},
+  {n:116,s:"Lv",r:7,c:16,cat:"metal"},
+  {n:117,s:"Ts",r:7,c:17,cat:"halogen"},
+  {n:118,s:"Og",r:7,c:18,cat:"noble"}
+];
+
+/* -------------------------
+ Canvas & layout variables
+-------------------------*/
+const canvas = document.getElementById('main');
+const ctx = canvas.getContext('2d');
+let DPR = Math.max(1, window.devicePixelRatio || 1);
+
+function resize(){
+  DPR = Math.max(1, window.devicePixelRatio || 1);
+  canvas.width = Math.floor(window.innerWidth * DPR);
+  canvas.height = Math.floor(window.innerHeight * DPR);
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  layoutAndDraw();
+}
+window.addEventListener('resize', resize);
+
+const HUD_HEIGHT = 56; // px reserved top for HUD
+let gridBox = {};   // position and size of grid area
+let paletteBox = {}; // area where tiles are drawn
+
+// game state
+let score = 0;
+let placed = 0;
+let startTime = Date.now();
+let timerInterval = null;
+const placedMap = new Map(); // key "r,c" -> symbol
+let paletteTiles = []; // array of {n,s,r,c,cat, removed:false}
+let selectedTileIndex = -1; // index into paletteTiles
+let flashSlots = {}; // key-> expire time for flash on wrong
+let fireworks = []; // particles for victory
+let modalShown = false;
+
+/* category colors */
+const catColor = {
+  nonmetal:"#3a6ea5", noble:"#9a4dff", alkali:"#ff5733", alkaline:"#ff8d1a",
+  metalloid:"#ffc300", halogen:"#ff33a8", metal:"#4caf50", transition:"#33b5e5",
+  lanthanoid:"#e67e22", actinoid:"#c0392b"
+};
+
+/* build palette */
+function initPalette(){
+  paletteTiles = elements.map(e=>({n:e.n,s:e.s,r:e.r,c:e.c,cat:e.cat,removed:false}));
+  // shuffle for visual randomness
+  for(let i=paletteTiles.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [paletteTiles[i],paletteTiles[j]]=[paletteTiles[j],paletteTiles[i]];
+  }
+}
+
+/* layout: we reserve top HUD, grid on left (or top), palette on right (or bottom) depending on aspect */
+function layoutAndDraw(){
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const cols = 18;
+  const rows = 9; // original grid rows including lanthanoid row in display
+  // Leave HUD_HEIGHT at top
+  const areaH = h - HUD_HEIGHT - 12; // padding
+  const areaW = w - 18; // padding
+
+  // choose orientation: if wide, grid left, palette on right; else grid above palette
+  if(w >= 900){
+    const gridWidth = Math.min(980, Math.floor(areaW * 0.72));
+    const paletteWidth = areaW - gridWidth - 12;
+    gridBox.x = 9; gridBox.y = HUD_HEIGHT + 6; gridBox.w = gridWidth; gridBox.h = areaH;
+    paletteBox.x = gridBox.x + gridBox.w + 12; paletteBox.y = gridBox.y; paletteBox.w = paletteWidth; paletteBox.h = areaH;
+  } else {
+    // stacked: grid on top, palette bottom
+    const gridHeight = Math.floor(areaH * 0.66);
+    gridBox.x = 9; gridBox.y = HUD_HEIGHT + 6; gridBox.w = areaW; gridBox.h = gridHeight;
+    paletteBox.x = 9; paletteBox.y = gridBox.y + gridBox.h + 8; paletteBox.w = areaW; paletteBox.h = areaH - gridBox.h - 8;
+  }
+  drawAll();
+}
+
+/* convert grid cell to pixel */
+function gridCellRect(col, row){
+  // We map rows 1..7 normal, row9 lanthanoids, row10 actinoids displayed at bottom of grid area as small band
+  // But earlier data uses r values 1..10; we will display rows 1..7 as main table rows, row9 (lanthanoid) below, row10 (actinoid) below that inside grid area.
+  // For simplicity we will map displayRows = 7 + 2 ( 7 main rows + lanthanoid + actinoid ) => 9 visual rows
+  // Map source r -> visualRow:
+  // r 1..7 => same (1..7)
+  // r 9 => visualRow 8
+  // r 10 => visualRow 9
+  const srcR = row;
+  let vRow = (srcR >=1 && srcR <=7) ? srcR : (srcR === 9 ? 8 : (srcR === 10 ? 9 : srcR));
+  const cols = 18;
+  const rows = 9;
+  const pad = 8;
+  const cellW = (gridBox.w - pad*2) / cols;
+  const cellH = (gridBox.h - pad*2) / rows;
+  const x = gridBox.x + pad + (col-1) * cellW;
+  const y = gridBox.y + pad + (vRow-1) * cellH;
+  return {x,y,w:cellW,h:cellH, cx: x + cellW/2, cy: y + cellH/2};
+}
+
+/* draw everything */
+function drawAll(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawBackground();
+  drawHUD();
+  drawGrid();
+  drawPalette();
+  if(modalShown) drawModalDim();
+  if(fireworks.length) drawFireworks();
+}
+
+/* background */
+function drawBackground(){
+  // subtle vignette
+  const g = ctx.createLinearGradient(0,0,0,canvas.height);
+  g.addColorStop(0,"#061016"); g.addColorStop(1,"#041016");
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+
+/* HUD HTML already exists; update its values */
+function drawHUD(){
+  // update HTML badges
+  document.getElementById('scoreHtml').querySelector('strong').textContent = score;
+  document.getElementById('placedHtml').textContent = placed;
+  // timer
+  const s = Math.floor((Date.now() - startTime)/1000);
+  const mm = String(Math.floor(s/60)).padStart(2,'0'), ss = String(s%60).padStart(2,'0');
+  document.getElementById('timeHtml').textContent = mm + ':' + ss;
+}
+
+/* draw main grid (slots) */
+function drawGrid(){
+  const cols = 18, rows = 9;
+  // background box
+  const r = gridBox;
+  ctx.fillStyle = "rgba(255,255,255,0.02)";
+  roundRect(ctx, r.x, r.y, r.w, r.h, 12);
+  ctx.fill();
+
+  // draw cells
+  elements.forEach(el=>{
+    const rect = gridCellRect(el.c, el.r);
+    // base cell background tint based on category
+    const color = catColor[el.cat] || "#888";
+    ctx.fillStyle = hexToRGBA(color, 0.12);
+    roundRect(ctx, rect.x, rect.y, rect.w-4, rect.h-4, 8);
+    ctx.fill();
+
+    // border
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, rect.x, rect.y, rect.w-4, rect.h-4, 8);
+    ctx.stroke();
+
+    // if placed map has this slot show symbol and glowing
+    const key = `${el.r},${el.c}`;
+    if(placedMap.has(key)){
+      // filled
+      ctx.fillStyle = "#04120b";
+      roundRect(ctx, rect.x+2, rect.y+2, rect.w-8, rect.h-8, 6);
+      ctx.fillStyle = hexToRGBA("#2ecc71", 0.9);
+      roundRect(ctx, rect.x+2, rect.y+2, rect.w-8, rect.h-8, 6);
+      ctx.fill();
+
+      // symbol
+      ctx.fillStyle = "#02110a";
+      ctx.font = `${Math.floor(rect.h*0.34)}px  Inter, Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(placedMap.get(key), rect.cx, rect.cy);
+    } else {
+      // empty - draw placeholder (light symbol of expected element number optionally)
+      ctx.fillStyle = "rgba(255,255,255,0.06)";
+      ctx.font = `${Math.floor(rect.h*0.18)}px Inter, Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("", rect.cx, rect.cy);
+    }
+
+    // small atomic number in corner
+    ctx.fillStyle = "rgba(255,255,255,0.18)";
+    ctx.font = `${Math.floor(rect.h*0.12)}px Inter, Arial`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(String(el.n), rect.x + 6, rect.y + 6);
+
+    // flashing on wrong attempts?
+    const fKey = `${el.r},${el.c}`;
+    if(flashSlots[fKey] && flashSlots[fKey] > Date.now()){
+      // draw red outline
+      ctx.strokeStyle = 'rgba(255,80,80,0.9)';
+      ctx.lineWidth = 3;
+      roundRect(ctx, rect.x+1.5, rect.y+1.5, rect.w-7, rect.h-7, 8);
+      ctx.stroke();
+    }
+  });
+}
+
+/* draw tile palette */
+function drawPalette(){
+  const p = paletteBox;
+  // background
+  ctx.fillStyle = "rgba(255,255,255,0.02)";
+  roundRect(ctx, p.x, p.y, p.w, p.h, 10); ctx.fill();
+
+  // compute tile grid inside palette
+  const padding = 10;
+  const cols = Math.max(8, Math.floor((p.w - padding*2) / 44)); // tile size ~40
+  const tileSize = Math.min(44, Math.floor((p.w - padding*2) / cols) - 6);
+  const gap = 6;
+  const startX = p.x + padding;
+  const startY = p.y + padding;
+
+  ctx.font = `${Math.floor(tileSize*0.46)}px Inter, Arial`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  let drawn = 0;
+  for(let i=0;i<paletteTiles.length;i++){
+    const t = paletteTiles[i];
+    if(t.removed) continue;
+    const col = drawn % cols;
+    const row = Math.floor(drawn / cols);
+    const x = startX + col * (tileSize + gap);
+    const y = startY + row * (tileSize + gap);
+    // store bounding for hit-test
+    t._bx = x; t._by = y; t._bw = tileSize; t._bh = tileSize;
+    // background color by category
+    const color = catColor[t.cat] || "#777";
+    ctx.fillStyle = color;
+    roundRect(ctx, x, y, tileSize, tileSize, 8); ctx.fill();
+    // outline if selected
+    if(i === selectedTileIndex){
+      ctx.strokeStyle = "rgba(255,255,255,0.95)";
+      ctx.lineWidth = 2;
+      roundRect(ctx, x-3, y-3, tileSize+6, tileSize+6, 10); ctx.stroke();
+    }
+    // symbol
+    ctx.fillStyle = "#fff";
+    ctx.fillText(t.s, x + tileSize/2, y + tileSize/2);
+    drawn++;
+  }
+
+  // If no tiles left show message
+  if(drawn === 0){
+    ctx.fillStyle = "rgba(255,255,255,0.12)";
+    ctx.font = "14px Inter, Arial";
+    ctx.fillText("All tiles placed!", p.x + p.w/2, p.y + p.h/2);
+  }
+}
+
+/* draw dim behind modal when shown */
+function drawModalDim(){
+  ctx.fillStyle = "rgba(0,0,0,0.48)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+
+/* utils: draw rounded rect */
+function roundRect(ctx,x,y,w,h,r){
+  const rad = r || 6;
+  ctx.beginPath();
+  ctx.moveTo(x+rad,y);
+  ctx.arcTo(x+w,y,x+w,y+h,rad);
+  ctx.arcTo(x+w,y+h,x,y+h,rad);
+  ctx.arcTo(x,y+h,x,y,rad);
+  ctx.arcTo(x,y,x+w,y,rad);
+  ctx.closePath();
+}
+
+/* hex color to rgba */
+function hexToRGBA(hex, a){
+  if(!hex) return `rgba(255,255,255,${a})`;
+  const c = hex.replace('#','');
+  const r = parseInt(c.substring(0,2),16);
+  const g = parseInt(c.substring(2,4),16);
+  const b = parseInt(c.substring(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* -------------------------
+ Interaction: clicking palette to select tile, clicking grid to place
+-------------------------*/
+canvas.addEventListener('pointerdown', e=>{
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left);
+  const y = (e.clientY - rect.top);
+
+  // if modal shown, ignore canvas clicks
+  if(modalShown) return;
+
+  // check palette click first
+  for(let i=0;i<paletteTiles.length;i++){
+    const t = paletteTiles[i];
+    if(t.removed) continue;
+    if(t._bx && x >= t._bx && x <= t._bx + t._bw && y >= t._by && y <= t._by + t._bh){
+      // select tile (pointer-events handled)
+      selectedTileIndex = (selectedTileIndex === i) ? -1 : i;
+      drawAll();
+      return;
+    }
+  }
+  // If clicked on grid: determine which cell
+  // iterate through elements to find clicked slot
+  for(const el of elements){
+    const r = gridCellRect(el.c, el.r);
+    if(x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h){
+      // clicked slot
+      handleSlotClick(el);
+      return;
+    }
+  }
+});
+
+/* get grid cell rect in page coords (non-DPR) */
+function gridCellRect(col,row){
+  const rect = gridCellRectRaw(col,row);
+  return rect;
+}
+function gridCellRectRaw(col,row){
+  // same as earlier function but returns non-DPR coordinates (canvas uses CSS pixels)
+  const pad = 8;
+  const cols = 18;
+  const rows = 9;
+  const cellW = (gridBox.w - pad*2) / cols;
+  const cellH = (gridBox.h - pad*2) / rows;
+  // map src row to visual row
+  const srcR = row;
+  const vRow = (srcR >=1 && srcR <=7) ? srcR : (srcR === 9 ? 8 : (srcR===10 ? 9 : srcR));
+  const x = gridBox.x + pad + (col-1) * cellW;
+  const y = gridBox.y + pad + (vRow-1) * cellH;
+  return {x,y,w:cellW,h:cellH,cx:x+cellW/2,cy:y+cellH/2};
+}
+
+/* handle placement logic */
+function handleSlotClick(el){
+  // if slot already filled, ignore
+  const key = `${el.r},${el.c}`;
+  if(placedMap.has(key)) return;
+
+  if(selectedTileIndex < 0) {
+    // no tile selected -> small flash hint
+    flashSlots[key] = Date.now() + 700;
+    setTimeout(()=>{ delete flashSlots[key]; drawAll(); }, 700);
+    drawAll();
+    return;
+  }
+
+  const tile = paletteTiles[selectedTileIndex];
+  if(!tile) return;
+
+  // check correct
+  if(tile.r == el.r && tile.c == el.c){
+    // correct placement
+    placedMap.set(key, tile.s);
+    tile.removed = true;
+    selectedTileIndex = -1;
+    score += 10;
+    placed += 1;
+    drawAll();
+
+    // check win
+    if(placed >= 118) {
+      onWin();
+    }
+  } else {
+    // wrong placement: flash slot red and penalty
+    flashSlots[key] = Date.now() + 700;
+    score = Math.max(0, score - 5);
+    // small shake visual: we use brief flash
+    setTimeout(()=>{ delete flashSlots[key]; drawAll(); }, 700);
+    drawAll();
+  }
+}
+
+/* hint button */
+document.getElementById('hintBtn').addEventListener('click', ()=>{
+  if(score < 15) score = 0; else score -= 15;
+  // highlight 3 unplaced slots briefly
+  const un = elements.filter(e=> !placedMap.has(`${e.r},${e.c}`));
+  for(let i=0;i<3 && un.length;i++){
+    const idx = Math.floor(Math.random()*un.length);
+    const el = un.splice(idx,1)[0];
+    flashSlots[`${el.r},${el.c}`] = Date.now() + 1500;
+    setTimeout(()=>{ delete flashSlots[`${el.r},${el.c}`]; drawAll(); }, 1500);
+  }
+  drawAll();
+});
+
+/* restart */
+document.getElementById('restart').addEventListener('click', ()=>{
+  restartGame();
+});
+document.getElementById('close').addEventListener('click', ()=>{
+  hideModal();
+});
+
+/* Win handler: show modal + start fireworks */
+function onWin(){
+  modalShown = true;
+  const modal = document.getElementById('modal');
+  const overlay = document.getElementById('overlay');
+  const elapsed = Math.floor((Date.now() - startTime)/1000);
+  const mm = Math.floor(elapsed/60), ss = elapsed % 60;
+  document.getElementById('finalStats').textContent = `Score: ${score} • Time: ${mm}m ${ss}s • 118/118`;
+  modal.style.display = 'block';
+  overlay.style.pointerEvents = 'auto';
+  // center modal by CSS (overlay absolute)
+  startFireworks();
+}
+
+/* hide modal & stop fireworks */
+function hideModal(){
+  const modal = document.getElementById('modal');
+  modal.style.display = 'none';
+  document.getElementById('overlay').style.pointerEvents = 'none';
+  modalShown = false;
+  fireworks = [];
+  drawAll();
+}
+
+/* restart */
+function restartGame(){
+  score = 0; placed = 0; startTime = Date.now();
+  placedMap.clear(); selectedTileIndex = -1; flashSlots = {}; fireworks = []; modalShown = false;
+  initPalette();
+  hideModal();
+  drawAll();
+}
+
+/* fireworks: basic particle bursts */
+function startFireworks(){
+  fireworks = [];
+  const spawnCount = 18;
+  for(let i=0;i<spawnCount;i++){
+    setTimeout(()=>spawnBurst(), i*180);
+  }
+  requestAnimationFrame(fireworksLoop);
+}
+function spawnBurst(){
+  const w = canvas.width / DPR, h = canvas.height / DPR;
+  const cx = Math.random() * (w*0.8) + w*0.1;
+  const cy = Math.random() * (h*0.25) + h*0.05;
+  const count = 60 + Math.floor(Math.random()*80);
+  for(let i=0;i<count;i++){
+    const angle = Math.random()*Math.PI*2;
+    const speed = 1 + Math.random()*4;
+    fireworks.push({x:cx,y:cy,vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed, life:60+Math.random()*60, age:0, hue:Math.floor(Math.random()*360)});
+  }
+}
+function fireworksLoop(){
+  // update
+  for(let i=fireworks.length-1;i>=0;i--){
+    const p = fireworks[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.03; p.vx *= 0.99; p.age++;
+    if(p.age > p.life) fireworks.splice(i,1);
+  }
+  drawAll();
+  if(fireworks.length) requestAnimationFrame(fireworksLoop);
+}
+function drawFireworks(){
+  const ctx2 = ctx;
+  for(const p of fireworks){
+    const t = 1 - p.age/p.life;
+    ctx2.beginPath();
+    ctx2.fillStyle = `hsla(${p.hue},100%,60%,${0.9 * t})`;
+    ctx2.arc(p.x, p.y, 1.2 + 2.2 * t, 0, Math.PI*2);
+    ctx2.fill();
+  }
+}
+function layoutPalette(){
+  const rows = Math.ceil(elements.length / 10); // assume 10 per row
+  let blockW = paletteBox.w / 10;
+  let blockH = paletteBox.h / rows;
+
+  // if blocks are too tall, shrink them to fit
+  const maxRows = Math.floor(paletteBox.h / 40); // min 40px height
+  if(rows > maxRows){
+    blockH = paletteBox.h / rows;
+  }
+  
+  // store block size
+  paletteBlockW = blockW;
+  paletteBlockH = blockH;
+}
+
+/* initial run */
+initPalette();
+resize();
+startTime = Date.now();
+timerInterval = setInterval(()=>drawHUD(), 500);
+
+/* show everything */
+drawAll();
+
+</script>
+</body>
+</html>
