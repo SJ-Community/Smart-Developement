@@ -1,58 +1,136 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Guess the Number — Extraordinary</title>
 <style>
 :root{
-  --bg1:#f6f7fb; --bg2:#eef6ff;
-  --card:rgba(255,255,255,0.75);
-  --accent:#3b82f6; --accent-2:#06b6d4;
-  --muted:#6b7280;
-  --success:#16a34a; --danger:#ef4444;
+  --bg1: #f6f7fb;
+  --bg2: #eef6ff;
+  --card: rgba(255,255,255,0.75);
+  --accent: #3b82f6;
+  --accent-2: #06b6d4;
+  --muted: #6b7280;
+  --glass-shadow: 0 8px 30px rgba(16,24,40,0.08);
+  --glass-border: rgba(255,255,255,0.6);
+  --success: #16a34a;
+  --danger: #ef4444;
 }
-body.dark{--bg1:#1e293b;--bg2:#0f172a;--card:rgba(30,41,59,0.85);--accent:#facc15;--accent-2:#f97316;--muted:#94a3b8;--success:#22c55e;--danger:#ef4444;color:#f1f5f9;}
-body.colorful{--bg1:#ffedea;--bg2:#fce7f3;--card:rgba(255,255,255,0.85);--accent:#f43f5e;--accent-2:#fbbf24;--muted:#9ca3af;--success:#10b981;--danger:#ef4444;}
+
 *{box-sizing:border-box;}
-html,body{height:100%;margin:0;font-family:Inter,system-ui;display:flex;flex-direction:column;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:inherit;}
-.wrap{display:flex;flex:1;overflow:hidden;transition:all 0.3s;}
-.panel{background:var(--card);border-radius:18px;padding:22px;border:1px solid rgba(255,255,255,0.6);box-shadow:0 8px 30px rgba(16,24,40,0.08);backdrop-filter:blur(6px) saturate(120%);overflow:auto;margin:16px auto;}
-.left-panel{display:flex;flex-direction:column;gap:18px;flex:1;}
-.right-column{width:300px;flex-shrink:0;transform:translateX(100%);transition:transform 0.35s ease;position:relative;}
-.right-column.visible{transform:translateX(0);}
-.settings-btn{position:fixed;top:16px;right:16px;width:48px;height:48px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:18px;cursor:pointer;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.15);}
-header h1{margin:0;font-size:22px;letter-spacing:-0.2px;}
-header p{margin:6px 0 0;color:var(--muted);font-size:13px;}
+html,body{height:90%; justify-self: center; margin:0; font-family:Inter,ui-sans-serif,system-ui; background: linear-gradient(180deg,var(--bg1),var(--bg2)); display:flex; flex-direction:column; color:#0f172a;}
+
+.wrap{
+  display:flex; flex:1; overflow:hidden; 
+}
+
+.panel{
+  background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.82));
+  border-radius:18px; padding:22px; border:1px solid var(--glass-border); box-shadow:var(--glass-shadow);
+  backdrop-filter: blur(6px) saturate(120%);
+  overflow:auto;
+  margin-top: 2cm;
+}
+
+.left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    height: 100vh; /* full viewport height */
+    padding: 22px;
+   
+}
+
+
+
+
+.right-column{
+  width:300px; flex-shrink:0; transform: translateX(0); transition: transform 0.35s ease;
+  position:relative;
+}
+
+.right-column.hidden{
+  transform: translateX(100%);
+}
+
+.settings-btn{
+  position:fixed; top:16px; left:16px; width:48px; height:48px; background:var(--accent); border-radius:8px;
+  display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:18px; cursor:pointer; z-index:1000;
+  box-shadow:0 4px 12px rgba(0,0,0,0.15);
+}
+
+header h1{margin:0;font-size:22px;letter-spacing:-0.2px}
+header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+
 .game-area{display:flex;flex-direction:column;gap:18px;}
-.big-card{display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:14px;background:linear-gradient(180deg,rgba(250,250,255,0.85),rgba(245,249,255,0.8));border:1px solid rgba(59,130,246,0.08);}
-.number-plate{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-radius:12px;background:linear-gradient(90deg,rgba(255,255,255,0.9),rgba(250,250,255,0.9));box-shadow:0 6px 18px rgba(14,27,59,0.04);}
-.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-input[type=number]{padding:10px 12px;border-radius:10px;border:1px solid rgba(15,23,42,0.06);width:120px;font-size:16px;}
-input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{appearance:none;margin:0;}
-button{cursor:pointer;border:0;padding:10px 14px;border-radius:10px;font-weight:600;}
-.btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;box-shadow:0 8px 18px rgba(59,130,246,0.18);}
-.btn-ghost{background:transparent;border:1px solid rgba(15,23,42,0.06);color:var(--muted);}
-.btn-danger{background:var(--danger);color:white;}
-.guess-list{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;}
-.guess-item{display:flex;justify-content:space-between;padding:8px 10px;border-radius:8px;background:rgba(2,6,23,0.02);font-weight:600;}
-.message{padding:12px;border-radius:10px;font-weight:700;display:none;}
-.msg-warn{background:linear-gradient(90deg,#fff7ed,#fff1f0);color:var(--danger);border:1px solid rgba(239,68,68,0.06);}
-.msg-success{background:linear-gradient(90deg,#ecfdf5,#f0fff7);color:var(--success);border:1px solid rgba(16,185,129,0.06);}
-.progress-wrap{height:10px;background:rgba(2,6,23,0.04);border-radius:999px;overflow:hidden;}
-.progress{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));}
-@media(max-width:900px){.wrap{flex-direction:column;}.right-column{position:fixed;top:0;right:0;height:100%;background:var(--card);z-index:999;box-shadow:-4px 0 20px rgba(0,0,0,0.12);}}
+
+.big-card{display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:14px;background:linear-gradient(180deg, rgba(250,250,255,0.85), rgba(245,249,255,0.8));border:1px solid rgba(59,130,246,0.08)}
+
+.number-plate{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-radius:12px;background:linear-gradient(90deg, rgba(255,255,255,0.9), rgba(250,250,255,0.9));
+  box-shadow:0 6px 18px rgba(14, 27, 59, 0.04);
+}
+
+.hint{font-weight:700;color:var(--accent)}
+.meta{font-size:13px;color:var(--muted)}
+
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+input[type=number]{appearance:textfield;padding:10px 12px;border-radius:10px;border:1px solid rgba(15,23,42,0.06);width:120px;font-size:16px}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{appearance:none;margin:0}
+
+button{cursor:pointer;border:0;padding:10px 14px;border-radius:10px;font-weight:600}
+.btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;box-shadow:0 8px 18px rgba(59,130,246,0.18)}
+.btn-ghost{background:transparent;border:1px solid rgba(15,23,42,0.06);color:var(--muted)}
+.btn-danger{background:var(--danger);color:white}
+
+.left-panel .history{margin-top:6px;display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 10px;border-radius:999px;background:rgba(15,23,42,0.04);font-size:13px}
+
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.stat{padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(245,248,255,0.9));border:1px solid rgba(0,0,0,0.03);text-align:center}
+.stat h3{margin:0;font-size:18px}
+.stat p{margin:6px 0 0;color:var(--muted);font-size:13px}
+
+.difficulty{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.difficulty label{display:inline-flex;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:rgba(99,102,241,0.06);cursor:pointer}
+.difficulty input{display:none}
+
+.footer-note{margin-top:12px;font-size:13px;color:var(--muted)}
+
+.message{padding:12px;border-radius:10px;font-weight:700}
+.msg-warn{background:linear-gradient(90deg,#fff7ed,#fff1f0);color:var(--danger);border:1px solid rgba(239,68,68,0.06)}
+.msg-success{background:linear-gradient(90deg,#ecfdf5,#f0fff7);color:var(--success);border:1px solid rgba(16,185,129,0.06)}
+
+.progress-wrap{height:10px;background:rgba(2,6,23,0.04);border-radius:999px;overflow:hidden}
+.progress{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+
+.guess-list{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;padding-right:6px;}
+.guess-item{display:flex;justify-content:space-between;padding:8px 10px;border-radius:8px;background:rgba(2,6,23,0.02);font-weight:600}
+
+#confetti{position:fixed;left:0;top:0;pointer-events:none;width:100%;height:100%;z-index:999}
+
+.badge{display:inline-block;padding:6px 10px;border-radius:999px;background:linear-gradient(90deg,rgba(255,255,255,0.6),rgba(255,255,255,0.5));box-shadow:0 8px 20px rgba(2,6,23,0.06);font-weight:700}
+
+/* Mobile responsiveness */
+@media(max-width:900px){
+  .wrap{flex-direction:column;}
+  .right-column{position:fixed; top:0; right:0; height:100%; background:white; z-index:999; box-shadow:-4px 0 20px rgba(0,0,0,0.12);}
+}
 </style>
 </head>
 <body>
 <canvas id="confetti"></canvas>
+
 <div class="settings-btn" id="settingsBtn">&#9881;</div>
+
 <div class="wrap">
   <main class="panel left-panel">
     <header>
       <h1>Guess the Number</h1>
       <p>Find the hidden number — polished UI, subtle glass style, delightful animations.</p>
     </header>
+
     <section class="game-area" aria-live="polite">
       <div class="big-card">
         <div class="number-plate">
@@ -63,10 +141,12 @@ button{cursor:pointer;border:0;padding:10px 14px;border-radius:10px;font-weight:
           <div class="controls">
             <input id="guessInput" type="number" placeholder="Enter guess" min="1" aria-label="Enter your guess">
             <button id="guessBtn" class="btn-primary">Guess</button>
-            <button id="hintBtn" class="btn-ghost">Hint</button>
+            <button id="hintBtn" class="btn-ghost" title="Get a friendly hint">Hint</button>
           </div>
         </div>
-        <div id="messageArea" class="message"></div>
+
+        <div id="messageArea" class="message" style="display:none"></div>
+
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
           <div style="flex:1">
             <div class="meta">Your guesses</div>
@@ -75,116 +155,274 @@ button{cursor:pointer;border:0;padding:10px 14px;border-radius:10px;font-weight:
           <div style="width:220px">
             <div class="meta">Progress</div>
             <div class="progress-wrap"><div class="progress" id="progressBar"></div></div>
+            <div class="footer-note">Closer with each hint. Use difficulty to change range.</div>
           </div>
         </div>
       </div>
+
       <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
         <div style="display:flex;gap:8px;align-items:center">
           <button id="resetBtn" class="btn-ghost">Reset</button>
           <button id="newRoundBtn" class="btn-primary">New Round</button>
           <button id="giveUpBtn" class="btn-danger">Give Up</button>
         </div>
+
         <div class="meta">Round: <span id="roundCount">0</span> · Wins: <span id="winsCount">0</span></div>
       </div>
     </section>
   </main>
-  <aside class="panel right-column" id="settingsPanel">
-    <div><strong>Settings</strong><div class="meta">Adjust difficulty & themes</div></div>
-    <div class="meta" style="margin-top:12px;">Theme</div>
-    <div class="difficulty" role="radiogroup" aria-label="Theme">
-      <label><input type="radio" name="theme" value="light" checked> Light</label>
-      <label><input type="radio" name="theme" value="dark"> Dark</label>
-      <label><input type="radio" name="theme" value="colorful"> Colorful</label>
+
+  <aside class="panel right-column hidden" id="settingsPanel">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px">
+      <div><strong>Settings</strong><div class="meta">Adjust difficulty & features</div></div>
+      <div class="badge" id="statusBadge">ready</div>
     </div>
-    <div class="meta" style="margin-top:12px;">Difficulty</div>
+
+    <div class="stat">
+      <h3 id="targetReveal">—</h3>
+      <p>Target (for demo only)</p>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <div class="stat">
+      <h3 id="lastResult">—</h3>
+      <p>Last result</p>
+    </div>
+
+    <div style="height:18px"></div>
+
+    <div class="meta" style="margin-bottom:8px">Difficulty</div>
     <div class="difficulty" role="radiogroup" aria-label="Difficulty">
       <label><input type="radio" name="difficulty" value="easy" checked> Easy</label>
       <label><input type="radio" name="difficulty" value="medium"> Medium</label>
       <label><input type="radio" name="difficulty" value="hard"> Hard</label>
     </div>
+
+    <div style="height:12px"></div>
+
+    <div class="meta" style="margin-bottom:8px">Game stats</div>
+    <div class="stats">
+      <div class="stat"><h3 id="attemptsMade">0</h3><p>Attempts made</p></div>
+      <div class="stat"><h3 id="bestScore">—</h3><p>Best (fewest attempts)</p></div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <div class="meta">Quick tips</div>
+    <ul style="margin:8px 0 0 18px;color:var(--muted)">
+      <li>Pick a difficulty for preferred range.</li>
+      <li>Use Hint for directional help.</li>
+      <li>New Round creates a fresh number without resetting streaks.</li>
+    </ul>
+
+    <div class="footer-note" style="margin-top:14px">All data stored locally (optional). Works offline.</div>
   </aside>
 </div>
+
 <script>
-const settingsBtn=document.getElementById('settingsBtn');
-const settingsPanel=document.getElementById('settingsPanel');
-settingsBtn.addEventListener('click',()=>settingsPanel.classList.toggle('visible'));
+// Settings panel toggle
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsPanel = document.getElementById('settingsPanel');
+settingsBtn.addEventListener('click', ()=>{ settingsPanel.classList.toggle('hidden'); });
 
-const guessInput=document.getElementById('guessInput');
-const guessBtn=document.getElementById('guessBtn');
-const hintBtn=document.getElementById('hintBtn');
-const resetBtn=document.getElementById('resetBtn');
-const newRoundBtn=document.getElementById('newRoundBtn');
-const giveUpBtn=document.getElementById('giveUpBtn');
+// --------- Rest of your previous JS logic ---------
+const guessInput = document.getElementById('guessInput');
+const guessBtn = document.getElementById('guessBtn');
+const hintBtn = document.getElementById('hintBtn');
+const resetBtn = document.getElementById('resetBtn');
+const newRoundBtn = document.getElementById('newRoundBtn');
+const giveUpBtn = document.getElementById('giveUpBtn');
 
-const rangeText=document.getElementById('rangeText');
-const attemptsLeftEl=document.getElementById('attemptsLeft');
-const guessList=document.getElementById('guessList');
-const messageArea=document.getElementById('messageArea');
-const progressBar=document.getElementById('progressBar');
-const roundCountEl=document.getElementById('roundCount');
-const winsCountEl=document.getElementById('winsCount');
-const bestStreakEl=document.getElementById('bestStreak');
+const rangeText = document.getElementById('rangeText');
+const attemptsLeftEl = document.getElementById('attemptsLeft');
+const guessList = document.getElementById('guessList');
+const messageArea = document.getElementById('messageArea');
+const progressBar = document.getElementById('progressBar');
+const roundCountEl = document.getElementById('roundCount');
+const winsCountEl = document.getElementById('winsCount');
+const targetReveal = document.getElementById('targetReveal');
+const lastResult = document.getElementById('lastResult');
+const attemptsMadeEl = document.getElementById('attemptsMade');
+const bestScoreEl = document.getElementById('bestScore');
+const bestStreakEl = document.getElementById('bestStreak');
+const statusBadge = document.getElementById('statusBadge');
 
-let min=1,max=100,target=0,attempts=0,maxAttempts=10,round=0,wins=0,bestStreak=0,streak=0;
+let min=1,max=100,target=null,attempts=0,maxAttempts=10,round=0,wins=0,bestScore=null,bestStreak=0,streak=0;
 let guesses=[];
 
+const confettiCanvas = document.getElementById('confetti');
+const ctx = confettiCanvas.getContext('2d');
+let confettiPieces = [];
+
+function resizeCanvas(){ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
 function rand(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+
 function setDifficulty(d){
   if(d==='easy'){min=1;max=50;maxAttempts=8;}
   else if(d==='medium'){min=1;max=100;maxAttempts=10;}
   else{min=1;max=200;maxAttempts=12;}
-  rangeText.textContent=`${min}–${max}`;
-  attemptsLeftEl.textContent=maxAttempts-attempts;
+  rangeText.textContent = `${min}–${max}`;
+  attemptsLeftEl.textContent = maxAttempts - attempts;
 }
+
 function newTarget(){
-  target=rand(min,max);guesses=[];attempts=0;round++;
-  roundCountEl.textContent=round;
-  attemptsLeftEl.textContent=maxAttempts;
+  target = rand(min,max);
+  guesses=[];attempts=0;round++;
+  roundCountEl.textContent = round;
+  attemptsLeftEl.textContent = maxAttempts;
   guessList.innerHTML='';
   messageArea.style.display='none';
+  updateStats();
+  targetReveal.textContent = '• • •';
+  lastResult.textContent='—';
+  statusBadge.textContent = 'ready';
 }
+
+function updateStats(){
+  attemptsMadeEl.textContent = attempts;
+  bestScoreEl.textContent = bestScore===null? '—': bestScore;
+  bestStreakEl.textContent = streak;
+  winsCountEl.textContent = wins;
+}
+
 function showMessage(text,type='warn'){
   messageArea.style.display='block';
-  messageArea.textContent=text;
-  messageArea.className='message '+(type==='success'?'msg-success':'msg-warn');
-  setTimeout(()=>{messageArea.style.opacity='';},1500);
+  messageArea.textContent = text;
+  messageArea.className = 'message ' + (type==='success' ? 'msg-success' : 'msg-warn');
+  setTimeout(()=>{ if(messageArea) messageArea.style.opacity=''; }, 1500);
 }
-function addGuess(g,verdict){
+
+function addGuess(g, verdict){
   const li=document.createElement('div');
   li.className='guess-item';
-  li.innerHTML=`<span>#${guesses.length}</span><strong>${g}</strong><span style="color:${verdict==='correct'?'var(--success)':(verdict==='low'?'var(--danger)':'var(--muted)')}">${verdict}</span>`;
+  li.innerHTML = `<span>#${guesses.length}</span><strong>${g}</strong><span style="color:${verdict==='correct'?'var(--success)':(verdict==='low'?'var(--danger)':'var(--muted)')}">${verdict}</span>`;
   guessList.prepend(li);
 }
+
 function updateProgress(){
-  if(guesses.length===0){progressBar.style.width='0%';return;}
-  const last=guesses[guesses.length-1];
-  const distance=Math.abs(target-last);
-  const maxDist=Math.max(Math.abs(target-min),Math.abs(max-target));
-  progressBar.style.width=Math.round(Math.max(0,1-(distance/maxDist))*100)+'%';
+  if(guesses.length===0){progressBar.style.width='0%';return}
+  const last = guesses[guesses.length-1];
+  const distance = Math.abs(target - last);
+  const maxDist = Math.max(Math.abs(target-min), Math.abs(max-target));
+  const closeness = Math.max(0, 1 - (distance / maxDist));
+  progressBar.style.width = Math.round(closeness*100) + '%';
 }
+
 function handleGuess(){
-  const val=Number(guessInput.value);
-  if(!val||isNaN(val)) return showMessage('Enter a valid number','warn');
-  if(val<min||val>max) return showMessage(`Enter between ${min} and ${max}`,'warn');
-  attempts++;guesses.push(val);
-  attemptsLeftEl.textContent=Math.max(0,maxAttempts-attempts);
-  if(val===target){addGuess(val,'correct');wins++;streak++;bestStreak=Math.max(bestStreak,streak);showMessage(`Correct! You found ${target}.`,'success');}
-  else if(attempts>=maxAttempts){addGuess(val,val<target?'low':'high');showMessage(`Out of attempts — number was ${target}`,'warn');streak=0;}
-  else{addGuess(val,val<target?'low':'high');showMessage(val<target?'Try higher':'Try lower','warn');}
-  bestStreakEl.textContent=streak;
-  updateProgress();guessInput.value='';guessInput.focus();
+  const val = Number(guessInput.value);
+  if(!val || isNaN(val)) return showMessage('Enter a valid number','warn');
+  if(val<min || val>max) return showMessage(`Enter between ${min} and ${max}`,'warn');
+  attempts++;
+  attemptsLeftEl.textContent = Math.max(0, maxAttempts - attempts);
+  guesses.push(val);
+
+  if(val === target){
+    addGuess(val,'correct');
+    wins++;
+    streak++;
+    bestStreak = Math.max(bestStreak, streak);
+    bestScore = bestScore===null? attempts : Math.min(bestScore, attempts);
+    showMessage(`Correct! You found ${target} in ${attempts} attempts.`, 'success');
+    revealTarget();
+    triggerConfetti();
+    lastResult.textContent = 'Correct';
+    statusBadge.textContent = 'won';
+  } else if(attempts >= maxAttempts){
+    addGuess(val, val < target ? 'low' : 'high');
+    showMessage(`Out of attempts — the number was ${target}`, 'warn');
+    streak = 0;
+    lastResult.textContent = 'Lost';
+    revealTarget(true);
+    statusBadge.textContent = 'lost';
+  } else {
+    addGuess(val, val < target ? 'low' : 'high');
+    const dir = val < target ? 'higher' : 'lower';
+    showMessage(`Try ${dir}! Attempts left: ${maxAttempts - attempts}`, 'warn');
+    lastResult.textContent = val < target ? 'Too low' : 'Too high';
+    statusBadge.textContent = 'playing';
+  }
+
+  updateStats();
+  updateProgress();
+  guessInput.value='';
+  guessInput.focus();
 }
+
+function revealTarget(showAll=false){
+  targetReveal.textContent = target;
+}
+
+function giveHint(){
+  if(guesses.length===0) return showMessage('No guesses yet — try one first.','warn');
+  const last = guesses[guesses.length-1];
+  const diff = Math.abs(target - last);
+  let hint;
+  if(diff === 0) hint = 'You already have it!';
+  else if(diff <= Math.max(1, Math.round((max-min)*0.05))) hint = 'Very close — within 5% of range.';
+  else if(diff <= Math.max(2, Math.round((max-min)*0.12))) hint = 'Close — a little more.';
+  else hint = last < target ? 'Aim higher.' : 'Aim lower.';
+  showMessage(hint,'warn');
+}
+
+// Confetti
+function triggerConfetti(){
+  confettiPieces = [];
+  const colors = ['#06b6d4','#3b82f6','#60a5fa','#34d399','#f59e0b'];
+  for(let i=0;i<120;i++){
+    confettiPieces.push({x:Math.random()*confettiCanvas.width,y:-20-Math.random()*200,vx:(Math.random()-0.5)*6,vy:2+Math.random()*4,size:6+Math.random()*8,rot:Math.random()*360,vr:(Math.random()-0.5)*10,color:colors[Math.floor(Math.random()*colors.length)]});
+  }
+  animateConfetti();
+  setTimeout(()=>{confettiPieces=[]},4500);
+}
+let lastT=0;
+function animateConfetti(t){
+  if(!confettiPieces || confettiPieces.length===0){ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);return;}
+  const dt = Math.min(50,(t-lastT)||16);
+  lastT=t;
+  ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+  confettiPieces.forEach(p=>{
+    p.x+=p.vx*(dt/16); p.y+=p.vy*(dt/16); p.vy+=0.12*(dt/16); p.rot+=p.vr*(dt/16);
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+    ctx.fillStyle=p.color; ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.6); ctx.restore();
+  });
+  confettiPieces=confettiPieces.filter(p=>p.y<confettiCanvas.height+60);
+  requestAnimationFrame(animateConfetti);
+}
+
+// Wire up
 guessBtn.addEventListener('click',handleGuess);
-guessInput.addEventListener('keydown',e=>{if(e.key==='Enter') handleGuess();});
-hintBtn.addEventListener('click',()=>{if(guesses.length===0)return showMessage('No guesses yet','warn');const last=guesses[guesses.length-1];showMessage(last<target?'Aim higher':'Aim lower','warn');});
-newRoundBtn.addEventListener('click',()=>newTarget());
-resetBtn.addEventListener('click',()=>location.reload());
-giveUpBtn.addEventListener('click',()=>{showMessage(`You gave up — number was ${target}`,'warn');streak=0;bestStreakEl.textContent=streak;});
+guessInput.addEventListener('keydown',(e)=>{if(e.key==='Enter') handleGuess();});
+let inputTimer=null;
+guessInput.addEventListener('input',()=>{
+  if(inputTimer) clearTimeout(inputTimer);
+  inputTimer=setTimeout(()=>{const v=guessInput.value.trim();const num=Number(v);if(v!=='' && !isNaN(num) && num>=min && num<=max){handleGuess();}},700);
+});
+hintBtn.addEventListener('click',giveHint);
+newRoundBtn.addEventListener('click',()=>{newTarget();});
+resetBtn.addEventListener('click',()=>{localStorage.clear(); location.reload();});
+giveUpBtn.addEventListener('click',()=>{showMessage(`You gave up — the number was ${target}`,'warn');revealTarget(true);streak=0;statusBadge.textContent='gave up';});
+document.querySelectorAll('input[name="difficulty"]').forEach(inp=>{inp.addEventListener('change',(e)=>{setDifficulty(e.target.value); newTarget();});});
 
-document.querySelectorAll('input[name="difficulty"]').forEach(inp=>{inp.addEventListener('change',e=>{setDifficulty(e.target.value);newTarget();})});
-document.querySelectorAll('input[name="theme"]').forEach(inp=>{inp.addEventListener('change',e=>{document.body.className=e.target.value;})});
+try{
+  const s=JSON.parse(localStorage.getItem('gtn_stats')||'{}');
+  if(s.bestScore) bestScore=s.bestScore;
+  if(s.wins) wins=s.wins;
+  if(s.round) round=s.round;
+  if(s.streak) streak=s.streak;
+  if(s.bestStreak) bestStreak=s.bestStreak;
+}catch(e){}
 
-setDifficulty('medium');newTarget();
+function persist(){localStorage.setItem('gtn_stats',JSON.stringify({bestScore,wins,round,streak,bestStreak}));}
+setInterval(persist,2000);
+window.addEventListener('beforeunload',persist);
+
+// init
+setDifficulty('medium');
+newTarget();
+statusBadge.addEventListener('dblclick',()=>{targetReveal.textContent=target;});
 </script>
 </body>
 </html>
