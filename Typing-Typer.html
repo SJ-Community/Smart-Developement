@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Typing Speed — Extreme</title>
+<style>
+:root{
+  --bg:#0d1117;
+  --card-bg:rgba(255,255,255,0.03);
+  --accent:linear-gradient(90deg,#ff416c,#00ffff,#7cff70);
+  --highlight:rgba(255,255,102,0.2);
+}
+body {background:var(--bg); color:#e6eef8; margin:0; font-family:Inter,Segoe UI,sans-serif;}
+*{box-sizing:border-box;}
+.wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:12px;}
+.card{width:960px;max-width:96%;background:var(--card-bg);border-radius:20px;padding:24px;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.05);box-shadow:0 10px 40px rgba(0,0,0,0.5);}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.title{display:flex;align-items:center;gap:12px;}
+.logo{width:56px;height:56px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;}
+h1{font-size:20px;margin:0;}
+.sub{font-size:13px;color:rgba(230,238,248,0.7);margin-top:2px;}
+.stats{display:flex;gap:12px;margin-top:12px;}
+.stat{background:var(--card-bg);padding:10px 14px;border-radius:10px;text-align:center;min-width:90px;border:1px solid rgba(255,255,255,0.04);}
+.stat strong{display:block;font-size:16px;}
+.stat small{color:rgba(230,238,248,0.65);}
+.main{display:grid;grid-template-columns:1fr 280px;gap:20px;}
+.game{padding:20px;background:var(--card-bg);border-radius:14px;border:1px solid rgba(255,255,255,0.03);min-height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.wordBox{font-size:40px;font-weight:700;letter-spacing:2px;text-align:center;padding:12px 16px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);min-width:60%;}
+.wordBox .highlight{background:var(--highlight);padding:2px 6px;border-radius:6px;transition:background 0.2s ease;}
+.inputRow{margin-top:18px;display:flex;flex-direction:column;gap:10px;width:100%;align-items:center;}
+input[type=text]{font-size:16px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;outline:none;width:100%;max-width:400px;text-align:center;}
+button.btn{padding:10px 14px;border-radius:10px;border:none;background:#ff416c;color:white;font-weight:700;cursor:pointer;transition:all 0.2s ease;}
+button.btn:hover{transform:scale(1.05);box-shadow:0 6px 20px rgba(255,65,108,0.3);}
+.meter{width:220px;height:20px;border-radius:999px;background:rgba(255,255,255,0.03);overflow:hidden;border:1px solid rgba(255,255,255,0.02);}
+.meter > i{display:block;height:100%;width:100%;background:var(--accent);transform-origin:left;transition:width 0.05s linear;}
+.meter.warning > i{background:#ff416c;}
+.sidebar{padding:14px;background:var(--card-bg);border-radius:12px;border:1px solid rgba(255,255,255,0.03);}
+.sidebar h3{margin-bottom:6px;}
+.controls{display:flex;flex-direction:column;gap:8px;}
+.langs,.modes,.themes{display:flex;gap:8px;flex-wrap:wrap;}
+.chip{padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:0.2s;}
+.chip.active{background:rgba(255,255,255,0.05);box-shadow:0 6px 20px rgba(0,0,0,0.4);}
+.footerNote{margin-top:12px;font-size:13px;color:rgba(230,238,248,0.65);}
+.overlay{position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.6));display:flex;align-items:center;justify-content:center;border-radius:14px;backdrop-filter: blur(4px);transform:scale(0.98);opacity:0;pointer-events:none;transition:all .18s ease;}
+.overlay.show{opacity:1;transform:none;pointer-events:auto;}
+.overlay .panel{background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));padding:22px;border-radius:12px;text-align:center;border:1px solid rgba(255,255,255,0.04);}
+.overlay .big{font-size:40px;font-weight:800;margin:6px 0;}
+@media(max-width:880px){.main{grid-template-columns:1fr}.inputRow input{max-width:260px}.wordBox{font-size:28px}}
+
+/* Themes */
+body.simple {--bg:#f0f0f0;--card-bg:#ffffff;--accent:#ff416c;--highlight:rgba(255,65,108,0.2); color:#111;}
+body.neon {--bg:#0d1117;--card-bg:rgba(255,255,255,0.03);--accent:linear-gradient(90deg,#ff416c,#00ffff,#7cff70);--highlight:rgba(255,255,102,0.2); color:#e6eef8;}
+body.dark {--bg:#111827;--card-bg:rgba(25,25,30,0.8);--accent:#ff6ec7;--highlight:rgba(255,110,199,0.2); color:#e6eef8;}
+</style>
+</head>
+<body class="neon">
+<div class="wrap">
+<div class="card">
+  <div class="top">
+    <div class="title">
+      <div class="logo">TYPE</div>
+      <div>
+        <h1>Typing-Typer </h1>
+        <p class="sub">Words appear one-by-one. Type quickly — timer scales with difficulty.</p>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><strong id="score">0</strong><small>Score</small></div>
+      <div class="stat"><strong id="streak">0</strong><small>Streak</small></div>
+      <div class="stat"><strong id="best">0</strong><small>Best</small></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="game">
+      <div class="wordBox" id="wordBox">Ready?</div>
+      <div class="inputRow">
+        <input id="typed" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the word here...">
+        <button id="startBtn" class="btn">Start</button>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:10px;">
+          <div class="meter"><i id="meterFill"></i></div>
+          <div style="min-width:60px;text-align:center;font-weight:700" id="timeLeft">--</div>
+        </div>
+      </div>
+      <div class="overlay" id="overlay">
+        <div class="panel">
+          <div class="big" id="finalScore">0</div>
+          <div style="color:rgba(230,238,248,0.75)" id="finalMsg">Game Over</div>
+          <div style="margin-top:12px"><button id="retry" class="btn">Play Again</button></div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <h3>Settings</h3>
+      <div class="controls">
+        <strong>Language</strong>
+        <div class="langs">
+          <div class="chip active" data-lang="hi">हिन्दी</div>
+          <div class="chip" data-lang="en">English</div>
+        </div>
+        <strong>Difficulty</strong>
+        <div class="modes">
+          <div class="chip active" data-mode="easy">Easy</div>
+          <div class="chip" data-mode="hard">Hard</div>
+          <div class="chip" data-mode="veryhard">Very Hard</div>
+          <div class="chip" data-mode="insane">Insane</div>
+          <div class="chip" data-mode="impossible">Impossible</div>
+        </div>
+        <strong>UI Theme</strong>
+        <div class="themes">
+          <div class="chip active" data-theme="neon">Neon</div>
+          <div class="chip" data-theme="simple">Simple</div>
+          <div class="chip" data-theme="dark">Dark</div>
+        </div>
+        <label style="display:flex;gap:6px;align-items:center"><input id="showHints" type="checkbox"> Show first-half hint</label>
+        <div class="footerNote">Time = word length × difficulty factor. Impossible mode = ultra short time.</div>
+      </div>
+    </aside>
+  </div>
+</div>
+</div>
+
+<script>
+// Elements
+const wordBox = document.getElementById('wordBox');
+const typed = document.getElementById('typed');
+const startBtn = document.getElementById('startBtn');
+const meterFill = document.getElementById('meterFill');
+const timeLeftLabel = document.getElementById('timeLeft');
+const overlay = document.getElementById('overlay');
+const finalScore = document.getElementById('finalScore');
+const finalMsg = document.getElementById('finalMsg');
+const retry = document.getElementById('retry');
+const scoreEl = document.getElementById('score');
+const streakEl = document.getElementById('streak');
+const bestEl = document.getElementById('best');
+
+// Game State
+let language='hi',mode='easy',showHints=false,currentTheme='neon';
+let score=0,streak=0,best=0;
+let current='',timer=null,timeTotal=0,timeLeft=0;
+let usedWords=new Set();
+
+// Words
+const WORDS_HI=['विद्यालय','शब्द','कविता','ग्राम','प्रकृति','पान्डुलिपि','अध्यापक','छात्र','परीक्षा','ज्ञान','सपना','कहानी','नदी','पर्वत','वृक्ष','समय','आशा','शिक्षा','संगीत','चित्र','सफलता','कठोर','सफर','ध्यान','शुद्ध','समर्पण','विश्वास','सपनों','प्रयास','खेल','तार','चंद्र','सूर्य','सड़क','पुस्तक','दुनिया','सपना','संग्रह','आकाश','भोजन','भूत','विचार','संख्या','स्वप्न','कला','मनोरंजन','यात्रा','खुशी','सूर्य','चमक','नील','रंग','साथ','मित्र','शब्दकोश','संगीतकार','संगीत','सागर','झरना','अनुभव','सपनों','सफलता','शांति','सपनों','प्रेरणा','समय','मुक्ति','उत्सव','मौसम','नाटक','गीत','संवाद','सपनों','उम्मीद','कहानी','कविता','पुस्तकालय','संग्रह','ज्ञान','आदर्श','विचार','अनुभूति','खेल','कक्षा','विद्यालय','शिक्षक','छात्र','परीक्षा','सपना','चित्र','संगीत','ज्ञान','सफर','ध्यान','विश्वास','समर्पण','प्रयास','सफलता','आशा','समय','कठोर','पर्वत','वृक्ष','नदी','कहानी','सपनों'];
+const WORDS_EN=['knowledge','sprint','rhythm','mystery','quantum','pixel','legend','canvas','journey','prism','cascade','cipher','galaxy','tempo','vortex','ember','shimmer','fragment','gravity','zephyr','horizon','element','fusion','alpha','beta','gamma','delta','omega','matrix','vector','spectrum','puzzle','logic','dynamic','origin','nova','lunar','stellar','orbit','planet','comet','meteor','asteroid','nebula','cosmos','paradox','eclipse','zenith','vertex','dimension','core','pulse','signal','byte','data','syntax','array','function','variable','object','class','method','thread','stack','queue','loop','condition','operator','memory','cache','runtime','compile','execute','debug','algorithm','binary','hexadecimal','network','protocol','server','client','encrypt','decrypt','token','hash'];
+
+// Chips functionality
+document.querySelectorAll('.chip[data-lang]').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip[data-lang]').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active'); language=c.dataset.lang; resetSession();
+}));
+document.querySelectorAll('.chip[data-mode]').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip[data-mode]').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active'); mode=c.dataset.mode; resetSession();
+}));
+document.querySelectorAll('.chip[data-theme]').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip[data-theme]').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active'); currentTheme=c.dataset.theme; document.body.className=currentTheme;
+}));
+document.getElementById('showHints').addEventListener('change',e=>showHints=e.target.checked);
+
+// Word picking
+function pickWord(){
+  const bank=language==='hi'?WORDS_HI:WORDS_EN;
+  const available=bank.filter(w=>!usedWords.has(w));
+  if(available.length===0) usedWords.clear();
+  const word=available[Math.floor(Math.random()*available.length)];
+  usedWords.add(word);
+  return word;
+}
+
+// Time computation
+function computeTimeFor(word){
+  let factor;
+  switch(mode){
+    case 'easy': factor=1.2; break;
+    case 'hard': factor=0.8; break;
+    case 'veryhard': factor=0.6; break;
+    case 'insane': factor=0.45; break;
+    case 'impossible': factor=0.35; break;
+    default: factor=0.6;
+  }
+  return Math.max(1,Math.ceil(word.length*factor));
+}
+
+// Display word
+function showWord(w){
+  current=w;
+  if(showHints){
+    const hintLen=Math.floor(current.length/2);
+    const hint=current.slice(0,hintLen);
+    const rest=current.slice(hintLen);
+    wordBox.innerHTML=`<span class="highlight">${hint}</span>${rest}`;
+  }else wordBox.textContent=current;
+  typed.value=''; typed.focus();
+}
+
+// Start a round
+function startRound(){
+  clearInterval(timer);
+  overlay.classList.remove('show');
+  const w=pickWord();
+  showWord(w);
+  timeTotal=computeTimeFor(w); timeLeft=timeTotal;
+  updateMeter();
+  timer=setInterval(()=>{
+    timeLeft=Math.max(0,timeLeft-0.05);
+    if(timeLeft<=0) endGame();
+    updateMeter();
+  },50);
+}
+
+// Update meter
+function updateMeter(){
+  const pct=Math.max(0,Math.min(1,timeLeft/timeTotal));
+  meterFill.style.width=(pct*100)+'%';
+  if(pct<0.3) meterFill.parentElement.classList.add('warning');
+  else meterFill.parentElement.classList.remove('warning');
+  timeLeftLabel.textContent=(Math.ceil(timeLeft*10)/10).toFixed(1)+'s';
+}
+
+// End game
+function endGame(){
+  clearInterval(timer);
+  overlay.classList.add('show');
+  finalScore.textContent=score;
+  finalMsg.textContent=`You typed ${score} words — streak ${streak}.`;
+  if(score>best){best=score; bestEl.textContent=best;}
+}
+
+// Success
+function success(){
+  clearInterval(timer);
+  score++; streak++;
+  scoreEl.textContent=score; streakEl.textContent=streak;
+  wordBox.style.transform='scale(0.95)';
+  setTimeout(()=>wordBox.style.transform='none',100);
+  setTimeout(()=>startRound(),150);
+}
+
+// Input events
+typed.addEventListener('input',()=>{if(typed.value.trim()===current) success();});
+typed.addEventListener('keydown',e=>{if(e.key==='Enter'){typed.value.trim()===current?success():endGame();}});
+startBtn.addEventListener('click',()=>{
+  score=0; streak=0; scoreEl.textContent=0; streakEl.textContent=0;
+  startBtn.textContent='Restart'; usedWords.clear(); startRound();
+});
+retry.addEventListener('click',()=>{overlay.classList.remove('show'); score=0; streak=0; scoreEl.textContent=0; streakEl.textContent=0; usedWords.clear(); startRound();});
+
+function resetSession(){
+  score=0; streak=0; scoreEl.textContent=0; streakEl.textContent=0;
+  usedWords.clear(); wordBox.textContent='Ready?'; typed.value=''; overlay.classList.remove('show');
+}
+
+// Auto focus
+typed.addEventListener('focus',()=>typed.select());
+document.addEventListener('keydown',e=>{if(e.key.toLowerCase()==='s' && document.activeElement!==typed) startBtn.click();});
+</script>
+</body>
+</html>
