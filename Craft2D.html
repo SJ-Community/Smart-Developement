@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Craft2D</title>
+  <style>
+    :root {
+      --reserved-cm: 2;
+    }
+    html, body {
+      margin: 0;
+      height: 100vh;
+      width: 100vw;
+      background: #87ceeb;
+      overflow: hidden;
+      font-family: 'Minecraft', monospace, sans-serif;
+    }
+    @font-face {
+      font-family: 'Minecraft';
+      src: local('Monospace'), local('Consolas');
+    }
+
+    #gameWrap {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      width: 100vw;
+      transition: filter 0.25s ease;
+      background: linear-gradient(180deg, #7ec0ff 0%, #cfefff 100%);
+      position: relative;
+      height: 100vh;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    #gameWrap.blur { filter: blur(6px); }
+
+    canvas {
+      width: 100vw;
+      display: block;
+      image-rendering: pixelated;
+      touch-action: none;
+      background: transparent;
+      outline: none;
+      user-select: none;
+    }
+
+    .hud {
+      position: fixed;
+      top: 10px;
+      z-index: 80;
+      pointer-events: none;
+      color: white;
+      font-weight: 700;
+      text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+    }
+    #timeHud { left: 10px; display: none; }
+    #coordsHud { right: 10px; left: auto; display: none; }
+
+    #pauseBtn {
+      pointer-events: auto;
+      margin-left: 8px;
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.4);
+      color: white;
+      border-radius: 4px;
+      border: 2px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      font-weight: 900;
+      transition: background 0.1s;
+      text-shadow: none;
+    }
+    #pauseBtn:hover { background: rgba(0,0,0,0.6); }
+
+    #reservedArea {
+      width: 100%;
+      box-sizing: border-box;
+      position: relative;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      pointer-events: auto;
+      background: none;
+      margin-bottom: 2cm;
+      background-color: #a8f0a8;
+    }
+
+    #bottomHud {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 8px 12px;
+      box-sizing: border-box;
+      pointer-events: none;
+      background: none;
+    }
+    #hearts {
+      display: flex;
+      gap: 4px;
+      pointer-events: auto;
+    }
+    #hearts span {
+      display: inline-block;
+      font-size: 22px;
+      line-height: 1;
+      color: #A94442;
+      text-shadow: 2px 2px 0 rgba(0,0,0,0.6);
+      width: 20px;
+      text-align: center;
+    }
+
+    .touchControls {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      align-items: center;
+      padding: 8px 12px;
+      box-sizing: border-box;
+      pointer-events: auto;
+      background: rgba(10,10,10,0.08);
+      backdrop-filter: blur(2px);
+      background: none;
+    }
+    .touchControls .tbtn {
+      width: 48px; height: 48px;
+      background: rgba(255,255,255,0.12);
+      border: 2px solid rgba(0,0,0,0.25);
+      border-radius: 8px;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.18);
+      font-size: 22px;
+      color: #111;
+      display: flex; align-items: center; justify-content: center;
+      user-select: none; -webkit-user-select: none;
+      touch-action: none;
+      pointer-events: auto;
+      transition: transform 0.06s ease, box-shadow 0.06s ease;
+      opacity: 0.9;
+    }
+    .touchControls .tbtn:active, .touchControls .tbtn.pressed {
+      transform: translateY(4px); box-shadow: 0 0 0 rgba(0,0,0,0.18);
+    }
+    .touchControls .tbtn.sword-btn {
+      background: linear-gradient(180deg, #B0B0B0, #808080);
+      font-size: 24px;
+    }
+
+    .overlay-container {
+      position: fixed; inset: 0; z-index: 200;
+      display: none; align-items: center; justify-content: center;
+      pointer-events: auto;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    #startLobby {
+      width: 100vw; height: 100vh;
+      animation: fadeIn 0.6s ease-out;
+    }
+    #startCard {
+      width: calc(100vw - 1cm); height: calc(100vh - 1cm);
+      
+      border: none;
+      padding: 24px;
+      text-align: center;
+      color: white;
+      position: relative;
+      box-sizing: border-box;
+      background: linear-gradient(135deg, #4CAF50, #2196F3, #F44336, #FFEB3B, #E91E63);
+      background-size: 800%;
+      animation: backgroundShift 10s linear infinite;
+      border-radius: 30px;
+      box-shadow: 0 0 50px rgba(0,0,0,0.5), inset 0 0 40px rgba(255,255,255,0.3);
+      overflow: hidden;
+    }
+    @keyframes backgroundShift {
+      0% { background-position: 0% 0%; }
+      100% { background-position: 800% 800%; }
+    }
+    #startCard::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 50%);
+      opacity: 0.8;
+      z-index: 0;
+      border-radius: 30px;
+      animation: pulse 3s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+    }
+    #startCard > * {
+      position: relative;
+      z-index: 1;
+    }
+    #startCard .title {
+      font-size: 50px; letter-spacing: 12px; margin: 20px 0;
+      background: linear-gradient(90deg, #4CAF50, #FFEB3B, #F44336, #2196F3, #E91E63, #4CAF50);
+      background-size: 800%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 5px 5px 0 #333, -3px -3px 0 #FFF, 0 0 25px rgba(255,255,255,0.8);
+      animation: titleGradient 5s linear infinite, glowPulse 1.5s ease-in-out infinite;
+    }
+    #startCard .subtitle {
+      font-size: 32px;
+      background: linear-gradient(90deg, #FFEB3B, #2196F3, #FFEB3B);
+      background-size: 500%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 2px 2px 0 #333, 0 0 12px rgba(255,235,59,0.9);
+      margin-bottom: 30px;
+      animation: subtitleGlow 2s ease-in-out infinite;
+    }
+    #startCard .credit {
+      font-size: 22px;
+      color: #FFFFFF;
+      text-shadow: 2px 2px 0 #000000, 0 0 8px rgba(255,255,255,0.7);
+      margin-top: -15px;
+      margin-bottom: 30px;
+      animation: glowPulse 2.5s ease-in-out infinite;
+    }
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+      margin-bottom: 24px;
+      padding: 0 20px;
+    }
+    .gbtn {
+      display: block; width: 100%; max-width: 320px; padding: 16px 24px;
+      font-size: 26px; font-weight: 900; cursor: pointer;
+      border: 6px solid #222;
+      border-radius: 12px; color: #FFF;
+      text-shadow: 3px 3px 0 #000;
+      box-shadow: 0 10px 0 #222;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.3s;
+      position: relative; overflow: hidden;
+      background-size: 500%;
+      animation: buttonBounce 1.8s ease-in-out infinite;
+    }
+    .gbtn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      transition: left 0.4s;
+    }
+    .gbtn:hover::before { left: 100%; }
+    .gbtn:hover {
+      transform: scale(1.05);
+      filter: brightness(1.3);
+    }
+    .gbtn:active {
+      transform: translateY(10px); box-shadow: 0 0 0 #222;
+    }
+    .gbtn.start-btn {
+      background: linear-gradient(90deg, #4CAF50, #2196F3, #4CAF50);
+      background-size: 500%;
+      border-color: #388E3C; box-shadow: 0 10px 0 #388E3C;
+      animation: buttonGradient 2.5s linear infinite, buttonBounce 1.8s ease-in-out infinite;
+    }
+    .gbtn.start-btn:hover {
+      background: linear-gradient(90deg, #66BB6A, #42A5F5, #66BB6A);
+      background-size: 500%;
+    }
+    .gbtn.settings-btn {
+      background: linear-gradient(90deg, #FFEB3B, #F44336, #FFEB3B);
+      background-size: 500%;
+      border-color: #FBC02D; box-shadow: 0 10px 0 #FBC02D;
+      animation: buttonGradient 2.5s linear infinite, buttonBounce 1.8s ease-in-out infinite;
+    }
+    .gbtn.settings-btn:hover {
+      background: linear-gradient(90deg, #FFF176, #EF5350, #FFF176);
+      background-size: 500%;
+    }
+    .gbtn.quit-btn {
+      background: linear-gradient(90deg, #F44336, #D32F2F, #F44336);
+      background-size: 500%;
+      border-color: #E53935; box-shadow: 0 10px 0 #E53935;
+      animation: buttonGradient 2.5s linear infinite, buttonBounce 1.8s ease-in-out infinite;
+    }
+    .gbtn.quit-btn:hover {
+      background: linear-gradient(90deg, #EF5350, #E53935, #EF5350);
+      background-size: 500%;
+    }
+    @keyframes buttonGradient {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 500% 50%; }
+    }
+    .gbtn:disabled {
+      opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: 0 4px 0 #1A1A1A;
+      animation: none;
+    }
+
+    #pauseDialog, #gameEndDialog, #settingsDialog {
+      max-width: 400px; max-height: 80vh;
+      border: 6px solid #1A1A1A;
+      padding: 24px;
+      text-align: center;
+      color: white;
+      background: linear-gradient(135deg, #A05C3A, #8B5A2B, #D2691E, #CD853F);
+      background-size: 400%;
+      animation: backgroundShift 6s linear infinite;
+      border-radius: 12px;
+      box-shadow: 0 8px 0 #1A1A1A, 0 0 30px rgba(255,165,0,0.7), inset 0 0 20px rgba(255,255,255,0.4);
+      position: relative;
+      animation: fadeIn 0.3s ease-out;
+    }
+    #pauseDialog::before, #gameEndDialog::before, #settingsDialog::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        45deg,
+        #8B5A2B,
+        #8B5A2B 12px,
+        #7B4B2A 12px,
+        #7B4B2A 24px
+      );
+      opacity: 0.4;
+      z-index: 0;
+      border-radius: 12px;
+    }
+    #pauseDialog::after, #gameEndDialog::after, #settingsDialog::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+      animation: sparkle 4s ease-in-out infinite;
+      z-index: 0;
+      border-radius: 12px;
+    }
+    #pauseDialog > *, #gameEndDialog > *, #settingsDialog > * {
+      position: relative;
+      z-index: 1;
+    }
+    #pauseDialog .title, #settingsDialog .title {
+      color: #FFD700;
+      background: linear-gradient(90deg, #FFD700, #00A1D6, #FFD700);
+      background-size: 400%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 4px 4px 0 #4A2F00, 0 0 12px rgba(255,215,0,0.8);
+      font-size: 48px; margin-bottom: 24px;
+      animation: titleGradient 4s linear infinite;
+    }
+    #gameEndDialog .title {
+      color: #FF5555;
+      background: linear-gradient(90deg, #FF5555, #EF5350, #FF5555);
+      background-size: 400%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 4px 4px 0 #880000, 0 0 12px rgba(255,85,85,0.8);
+      font-size: 48px; margin-bottom: 24px;
+      animation: titleGradient 4s linear infinite;
+    }
+    #pauseDialog .gbtn, #gameEndDialog .gbtn, #settingsDialog .gbtn {
+      max-width: 300px;
+      padding: 14px 20px;
+      font-size: 20px;
+    }
+    .settings-options {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .settings-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.1);
+      padding: 12px;
+      border-radius: 8px;
+    }
+    .settings-option label {
+      font-size: 20px;
+      text-shadow: 2px 2px 0 #000;
+    }
+    .settings-option input[type="checkbox"] {
+      width: 24px;
+      height: 24px;
+    }
+
+    @media (max-width: 900px) {
+      #hearts span { font-size: 18px; width: 18px; }
+      .touchControls .tbtn { width: 44px; height: 44px; font-size: 20px; border-radius: 7px; }
+      #startCard { padding: 16px; margin: 10px; }
+      #startCard .title { font-size: 40px; letter-spacing: 6px; }
+      #startCard .subtitle { font-size: 24px; }
+      .gbtn { max-width: 280px; font-size: 22px; padding: 14px 20px; }
+      #pauseDialog, #gameEndDialog, #settingsDialog { max-width: 90vw; padding: 16px; }
+      #pauseDialog .title, #gameEndDialog .title, #settingsDialog .title { font-size: 36px; }
+      #pauseDialog .gbtn, #gameEndDialog .gbtn, #settingsDialog .gbtn { max-width: 260px; font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="gameWrap">
+    <canvas id="game" tabindex="0"></canvas>
+    <div class="hud" id="timeHud" aria-hidden="true">
+      <span id="timeLabel"></span>
+      <button id="pauseBtn" title="Pause">Pause</button>
+    </div>
+    <div class="hud" id="coordsHud" aria-hidden="true">
+      <span id="coordsLabel"></span>
+    </div>
+    <div id="reservedArea" aria-hidden="false">
+      <div id="bottomHud" aria-hidden="false">
+        <div id="hearts" aria-hidden="false"></div>
+      </div>
+      <div class="touchControls" id="touchControls" aria-hidden="false" style="display: none;">
+        <div class="tbtn" id="tLeft" data-action="left" role="button" aria-label="Left">←</div>
+        <div class="tbtn" id="tJump" data-action="jump" role="button" aria-label="Jump">↑</div>
+        <div class="tbtn" id="tRight" data-action="right" role="button" aria-label="Right">→</div>
+        <div class="tbtn sword-btn" id="tAttack" data-action="attack" role="button" aria-label="Attack">🗡</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="startLobby" class="overlay-container" style="display: flex;" aria-hidden="false">
+    <div id="startCard" class="dialog-card" role="dialog" aria-label="Start Craft2D">
+      
+      <h1 class="title">CRAFT2D</h1>
+      <div class="credit">v1.0 By SJ-Community</div>
+      <div class="subtitle">Embark on an Epic Blocky Journey!</div>
+      <div class="button-group">
+        <button id="startButton" class="gbtn start-btn">Start Adventure</button>
+        <button id="settingsBtn" class="gbtn settings-btn">Settings</button>
+        <button id="quitLobbyBtn" class="gbtn quit-btn">Quit</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pauseOverlay" class="overlay-container" aria-hidden="true">
+    <div id="pauseDialog" class="dialog-card">
+      <h2 class="title">Game Paused</h2>
+      <div class="button-group" style="gap: 16px;">
+        <button class="gbtn start-btn" id="resumeBtn">Resume Game</button>
+        <button class="gbtn quit-btn" id="quitToTitleBtn">Quit to Title</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameEndOverlay" class="overlay-container" aria-hidden="true">
+    <div id="gameEndDialog" class="dialog-card">
+      <h2 class="title">YOU DIED</h2>
+      <div class="button-group" style="gap: 16px;">
+        <button class="gbtn start-btn" id="restartBtn">Restart</button>
+        <button class="gbtn quit-btn" id="quitToTitleEndBtn">Quit to Title</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsOverlay" class="overlay-container" aria-hidden="true">
+    <div id="settingsDialog" class="dialog-card">
+      <h2 class="title">Settings</h2>
+      <div class="settings-options">
+        <div class="settings-option">
+          <label for="toggleTimeHud">Show Time HUD</label>
+          <input type="checkbox" id="toggleTimeHud" checked>
+        </div>
+        <div class="settings-option">
+          <label for="toggleCoordsHud">Show Coordinates HUD</label>
+          <input type="checkbox" id="toggleCoordsHud" checked>
+        </div>
+        <div class="settings-option">
+          <label for="toggleSound">Enable Sound (Placeholder)</label>
+          <input type="checkbox" id="toggleSound">
+        </div>
+      </div>
+      <div class="button-group" style="gap: 16px;">
+        <button class="gbtn start-btn" id="saveSettingsBtn">Save & Close</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+let DPR = Math.max(1, window.devicePixelRatio || 1);
+let W = window.innerWidth, H = window.innerHeight;
+
+function isMobile() {
+  return W <= 900;
+}
+
+function cmToPx(cm) {
+  return Math.round(cm * 37.7952755906);
+}
+
+let reservedBottomPx = cmToPx(2);
+
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  DPR = Math.max(1, window.devicePixelRatio || 1);
+  if (isMobile()) {
+    reservedBottomPx = cmToPx(4);
+    const canvasHeightCss = Math.max(120, H - reservedBottomPx);
+    canvas.style.width = W + 'px';
+    canvas.style.height = canvasHeightCss + 'px';
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(canvasHeightCss * DPR);
+    const reservedArea = document.getElementById('reservedArea');
+    reservedArea.style.height = (H - canvasHeightCss) + 'px';
+    reservedArea.style.minHeight = reservedBottomPx + 'px';
+  } else {
+    const reservedDesktop = 80;
+    const canvasHeightCss = H - reservedDesktop;
+    canvas.style.width = W + 'px';
+    canvas.style.height = canvasHeightCss + 'px';
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(canvasHeightCss * DPR);
+    const reservedArea = document.getElementById('reservedArea');
+    reservedArea.style.height = reservedDesktop + 'px';
+    reservedArea.style.minHeight = reservedDesktop + 'px';
+  }
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+const TILE = 32;
+const BASE_GRAVITY = 1400;
+const BASE_MOVE_SPEED = 160;
+const BASE_JUMP_SPEED = 520;
+const MIN_GROUND = 5;
+const DAY_CYCLE_DURATION = 360;
+const MAX_ZOMBIES = 15;
+const ZOMBIE_SPAWN_INTERVAL = 2;
+
+const BLOCK_TYPES = {
+  GRASS: 'grass', DIRT: 'dirt', STONE: 'stone', WOOD: 'wood', LEAF: 'leaf',
+  DIAMOND_ORE: 'diamond_ore', WATER: 'water', SAND: 'sand', CACTUS: 'cactus'
+};
+
+const SOLID_BLOCKS = ['grass', 'dirt', 'stone', 'diamond_ore', 'sand'];
+const PASS_THROUGH_BLOCKS = ['wood', 'leaf', 'cactus'];
+
+const textures = {};
+function makeTexture(type) {
+  const s = TILE;
+  const c = document.createElement('canvas');
+  c.width = s; c.height = s;
+  const g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+
+  if (type === 'grass') {
+    g.fillStyle = '#7EC459'; g.fillRect(0, 0, s, s);
+    g.fillStyle = '#A05C3A'; g.fillRect(0, s - 8, s, 8);
+    g.fillStyle = '#7EC459'; g.fillRect(0, 0, s, s / 2);
+    g.fillStyle = '#6AA84D';
+    for (let i = 0; i < 4; i++) {
+      g.fillRect(Math.floor(Math.random() * (s - 4)), Math.floor(Math.random() * (s - 16)), 4, 4);
+    }
+  } else if (type === 'dirt') {
+    g.fillStyle = '#A05C3A'; g.fillRect(0, 0, s, s);
+    g.fillStyle = '#905230';
+    for (let i = 0; i < 10; i++) {
+      g.fillRect(Math.floor(Math.random() * (s - 2)), Math.floor(Math.random() * (s - 2)), 2, 2);
+    }
+  } else if (type === 'stone' || type === 'diamond_ore') {
+    g.fillStyle = '#808080'; g.fillRect(0, 0, s, s);
+    for (let i = 0; i < 16; i++) {
+      g.fillStyle = Math.random() < 0.5 ? '#707070' : '#909090';
+      g.fillRect(Math.floor(Math.random() * (s - 2)), Math.floor(Math.random() * (s - 2)), 2, 2);
+    }
+    if (type === 'diamond_ore') {
+      g.fillStyle = '#6AE3E3';
+      for (let k = 0; k < 5; k++) {
+        g.fillRect(Math.floor(Math.random() * (s - 4)) + 2, Math.floor(Math.random() * (s - 4)) + 2, 4, 4);
+      }
+    }
+  } else if (type === 'wood') {
+    g.fillStyle = '#6B4F3F'; g.fillRect(0, 0, s, s);
+    g.strokeStyle = '#4A3628'; g.lineWidth = 2;
+    for (let i = 5; i < s; i += 8) {
+      g.beginPath(); g.moveTo(i, 0); g.lineTo(i, s); g.stroke();
+    }
+  } else if (type === 'leaf') {
+    g.fillStyle = '#4F8B33'; g.fillRect(0, 0, s, s);
+    g.fillStyle = '#3D6B26';
+    for (let i = 0; i < s; i += 4) for (let j = 0; j < s; j += 4) if (Math.random() < 0.6) g.fillRect(i, j, 2, 2);
+  } else if (type === 'water') {
+    g.fillStyle = 'rgba(60,120,220,0.72)'; g.fillRect(0, 0, s, s);
+    g.fillStyle = 'rgba(255,255,255,0.08)'; g.fillRect(0, 0, s, 4);
+  } else if (type === 'sand') {
+    g.fillStyle = '#FAD990'; g.fillRect(0, 0, s, s);
+    g.fillStyle = '#E6C685';
+    for (let i = 0; i < 10; i++) {
+      g.fillRect(Math.floor(Math.random() * (s - 3)), Math.floor(Math.random() * (s - 3)), 3, 3);
+    }
+  } else if (type === 'cactus') {
+    g.fillStyle = '#4A7023'; g.fillRect(0, 0, s, s);
+    g.fillStyle = '#3B5F17'; g.fillRect(0, 0, s, s / 4); g.fillRect(0, s - s / 4, s, s / 4);
+    g.fillRect(s / 2 - 2, 0, 4, s);
+  }
+  return c;
+}
+for (const t of Object.values(BLOCK_TYPES)) textures[t] = makeTexture(t);
+
+let blockMap = new Map();
+let groundHeightMap = new Map();
+let maxGenX = 0, minGenX = 0;
+let visibleBlocks = [];
+
+const DESERT_START_X = 50;
+const DESERT_MIN_LENGTH = 100;
+const DESERT_MAX_LENGTH = 300;
+let desertLimitX = DESERT_START_X + DESERT_MIN_LENGTH + Math.floor(Math.random() * (DESERT_MAX_LENGTH - DESERT_MIN_LENGTH + 1));
+
+function setBlock(tx, ty, type) {
+  blockMap.set(tx + ',' + ty, { xTile: tx, yTile: ty, type });
+}
+function getBlock(tx, ty) {
+  return blockMap.get(tx + ',' + ty);
+}
+
+function generateChunk(startX, numTiles) {
+  if (numTiles === 0) return;
+  const step = numTiles > 0 ? 1 : -1;
+  const endX = startX + numTiles;
+  const worldBottom = Math.floor((canvas.height / DPR) / TILE);
+
+  for (let x = startX; x !== endX; x += step) {
+    if (groundHeightMap.has(x)) continue;
+
+    const isCurrentlyDesert = x >= DESERT_START_X && x < desertLimitX;
+    const topBlock = isCurrentlyDesert ? 'sand' : 'grass';
+    const subBlock = isCurrentlyDesert ? 'sand' : 'dirt';
+
+    const neighbor = groundHeightMap.get(x - step);
+    let ground = neighbor !== undefined ? neighbor : worldBottom - 4;
+
+    if (Math.random() < 0.2) ground += Math.random() < 0.5 ? -1 : 1;
+    if (ground < MIN_GROUND) ground = MIN_GROUND;
+    if (ground > worldBottom - 2) ground = worldBottom - 2;
+
+    setBlock(x, ground, topBlock);
+    for (let y = ground + 1; y < worldBottom; y++) {
+      let type = y <= ground + 3 ? subBlock : 'stone';
+      if (type === 'stone' && y > worldBottom - Math.floor(worldBottom / 4) && Math.random() < 0.005) type = 'diamond_ore';
+      setBlock(x, y, type);
+    }
+
+    if (Math.random() < 0.08) {
+      if (isCurrentlyDesert) createCactus(x, ground - 1);
+      else createTree(x, ground - 1);
+    }
+
+    groundHeightMap.set(x, ground);
+    maxGenX = Math.max(maxGenX, x);
+    minGenX = Math.min(minGenX, x);
+  }
+}
+
+function createTree(xTile, yTop) {
+  const trunk = 3 + Math.floor(Math.random() * 3);
+  for (let h = 0; h < trunk; h++) setBlock(xTile, yTop - h, 'wood');
+  const topY = yTop - trunk;
+  for (let lx = -2; lx <= 2; lx++) {
+    for (let ly = -2; ly <= 1; ly++) {
+      if (Math.abs(lx) + Math.abs(ly) < 4 && Math.random() < 0.85) setBlock(xTile + lx, topY + ly, 'leaf');
+    }
+  }
+}
+
+function createCactus(xTile, yTop) {
+  const height = 2 + Math.floor(Math.random() * 4);
+  for (let h = 0; h < height; h++) setBlock(xTile, yTop - h, 'cactus');
+}
+
+function makeCharacterSprite() {
+  const sw = 16, sh = 32;
+  const t = document.createElement('canvas');
+  t.width = sw; t.height = sh;
+  const g = t.getContext('2d');
+  g.fillStyle = '#FFD1A4'; g.fillRect(4, 0, 8, 8);
+  g.fillStyle = '#3C2F2F'; g.fillRect(4, 0, 8, 3);
+  g.fillStyle = '#000'; g.fillRect(5, 4, 1, 1); g.fillRect(10, 4, 1, 1);
+  g.fillStyle = '#3C2F2F'; g.fillRect(6, 5, 4, 2);
+  g.fillStyle = '#00A1D6'; g.fillRect(4, 8, 8, 12);
+  g.fillStyle = '#FFD1A4'; g.fillRect(1, 8, 3, 12);
+  g.fillStyle = '#FFD1A4'; g.fillRect(12, 8, 3, 10);
+  g.fillStyle = '#B0B0B0'; g.fillRect(12, 18, 3, 6);
+  g.fillStyle = '#4A4A4A'; g.fillRect(12, 17, 3, 1);
+  g.fillStyle = '#3A5FCD'; g.fillRect(4, 20, 8, 12);
+  return t;
+}
+const playerSprite = makeCharacterSprite();
+
+function makeSwingingSprite(baseSprite, walkAnim, isZombie) {
+  const sw = 16, sh = 32;
+  const t = document.createElement('canvas');
+  t.width = sw; t.height = sh;
+  const g = t.getContext('2d');
+  g.drawImage(baseSprite, 0, 0);
+  const swing = Math.sin(walkAnim * 2) * 0.3;
+  g.save();
+  g.translate(2, 8); g.rotate(-swing);
+  g.fillStyle = isZombie ? '#6FB764' : '#FFD1A4'; g.fillRect(-1, 0, 3, 12);
+  g.restore();
+  g.save();
+  g.translate(14, 8); g.rotate(swing);
+  g.fillStyle = isZombie ? '#6FB764' : '#FFD1A4'; g.fillRect(-2, 0, 3, isZombie ? 12 : 10);
+  if (!isZombie) {
+    g.fillStyle = '#B0B0B0'; g.fillRect(-2, 10, 3, 6);
+    g.fillStyle = '#4A4A4A'; g.fillRect(-2, 9, 3, 1);
+  }
+  g.restore();
+  g.save();
+  g.translate(6, 20); g.rotate(swing);
+  g.fillStyle = isZombie ? '#2c2c2c' : '#3A5FCD'; g.fillRect(-2, 0, 4, 12);
+  g.restore();
+  g.save();
+  g.translate(10, 20); g.rotate(-swing);
+  g.fillStyle = isZombie ? '#2c2c2c' : '#3A5FCD'; g.fillRect(-2, 0, 4, 12);
+  g.restore();
+  return t;
+}
+
+function makeZombieSprite() {
+  const sw = 16, sh = 32;
+  const t = document.createElement('canvas');
+  t.width = sw; t.height = sh;
+  const g = t.getContext('2d');
+  for (let y = 0; y < 8; y++) {
+    for (let x = 3; x < 13; x++) {
+      g.fillStyle = Math.random() < 0.6 ? '#6FB764' : '#4A7A3D';
+      g.fillRect(x, y, 1, 1);
+    }
+  }
+  g.fillStyle = '#07130a'; g.fillRect(5, 4, 1, 1); g.fillRect(10, 4, 1, 1);
+  for (let y = 8; y < 20; y++) {
+    for (let x = 4; x < 12; x++) {
+      g.fillStyle = Math.random() < 0.85 ? (Math.random() < 0.4 ? '#2f6f4a' : '#3b6d4f') : '#2a2a2a';
+      g.fillRect(x, y, 1, 1);
+    }
+  }
+  for (let y = 8; y < 20; y++) {
+    g.fillStyle = Math.random() < 0.8 ? '#6FB764' : '#355e39';
+    g.fillRect(1, y, 3, 1); g.fillRect(12, y, 3, 1);
+  }
+  for (let y = 20; y < 32; y++) {
+    for (let x = 4; x < 12; x++) {
+      g.fillStyle = Math.random() < 0.6 ? '#2c2c2c' : '#1f1f1f';
+      g.fillRect(x, y, 1, 1);
+    }
+  }
+  return t;
+}
+const zombieSprite = makeZombieSprite();
+
+function makeCowSprite() {
+  const sw = 24, sh = 18;
+  const t = document.createElement('canvas');
+  t.width = sw; t.height = sh;
+  const g = t.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(2, 4, 20, 10);
+  for (let i = 0; i < 10; i++) {
+    g.fillStyle = Math.random() < 0.6 ? '#6b3f2a' : '#4f2e1f';
+    const w = 3 + Math.floor(Math.random() * 5);
+    const h = 2 + Math.floor(Math.random() * 3);
+    const x = 2 + Math.floor(Math.random() * (20 - w));
+    const y = 4 + Math.floor(Math.random() * (10 - h));
+    g.fillRect(x, y, w, h);
+  }
+  g.fillStyle = '#6b3f2a'; g.fillRect(0, 2, 6, 6);
+  g.fillStyle = '#ffffff'; g.fillRect(1, 3, 2, 2);
+  g.fillStyle = '#000'; g.fillRect(2, 4, 1, 1); g.fillRect(4, 4, 1, 1);
+  g.fillStyle = '#f2a6a6'; g.fillRect(10, 14, 4, 2);
+  return t;
+}
+const cowSprite = makeCowSprite();
+
+function makeChickenSprite() {
+  const sw = 16, sh = 16;
+  const t = document.createElement('canvas');
+  t.width = sw; t.height = sh;
+  const g = t.getContext('2d');
+  g.fillStyle = '#fefefe'; g.fillRect(2, 4, 12, 10);
+  g.fillStyle = '#ff4500'; g.fillRect(10, 3, 2, 1); g.fillRect(8, 5, 2, 1);
+  g.fillStyle = '#ffaa00'; g.fillRect(4, 6, 2, 2);
+  g.fillStyle = '#000'; g.fillRect(7, 6, 1, 1);
+  g.fillStyle = '#ffaa00'; g.fillRect(5, 14, 2, 2); g.fillRect(9, 14, 2, 2);
+  return t;
+}
+const chickenSprite = makeChickenSprite();
+
+function makePigSprite() {
+  const sw = 24, sh = 18;
+  const t = document.createElement('canvas');
+  t.width = sw; t.height = sh;
+  const g = t.getContext('2d');
+  g.fillStyle = '#FFC0CB'; g.fillRect(2, 4, 20, 10);
+  g.fillStyle = '#FF69B4'; g.fillRect(0, 2, 6, 6);
+  g.fillStyle = '#000'; g.fillRect(2, 4, 1, 1); g.fillRect(4, 4, 1, 1);
+  g.fillStyle = '#FFB6C1'; g.fillRect(10, 14, 4, 2);
+  return t;
+}
+const pigSprite = makePigSprite();
+
+function makeSheepSprite() {
+  const sw = 24, sh = 18;
+  const t = document.createElement('canvas');
+  t.width = sw; t.height = sh;
+  const g = t.getContext('2d');
+  g.fillStyle = '#F5F5F5'; g.fillRect(2, 4, 20, 10);
+  g.fillStyle = '#D3D3D3'; g.fillRect(0, 2, 6, 6);
+  g.fillStyle = '#000'; g.fillRect(2, 4, 1, 1); g.fillRect(4, 4, 1, 1);
+  g.fillStyle = '#F5F5F5'; g.fillRect(10, 14, 4, 2);
+  return t;
+}
+const sheepSprite = makeSheepSprite();
+
+const player = { x: 160, y: 0, vx: 0, vy: 0, width: 24, height: 48, onGround: false, facing: 1, inWater: false, health: 20, walkAnim: 0, damageFlash: 0 };
+let cameraX = 0;
+let lastDamage = 0;
+
+function placePlayerOnSurface() {
+  const tx = Math.floor(player.x / TILE);
+  if (!groundHeightMap.has(tx)) generateChunk(tx - 6, 12);
+  let ground = groundHeightMap.get(tx);
+  if (ground === undefined) ground = Math.floor((canvas.height / DPR) / TILE) - 4;
+  player.y = (ground - 1) * TILE - player.height;
+  player.vx = 0; player.vy = 0;
+}
+
+let animals = [];
+function spawnAnimalAtTile(tx, type) {
+  const ground = groundHeightMap.get(tx);
+  if (ground === undefined) return null;
+  const px = tx * TILE + (TILE - 24) / 2;
+  const height = type === 'zombie' ? 48 : (type === 'chicken' ? 18 : 36);
+  const py = (ground - 1) * TILE - height;
+  const a = { x: px, y: py, vx: 0, vy: 0, width: 24, height: height, type: type, facing: Math.random() < 0.5 ? -1 : 1, walkAnim: Math.random() * 10, idle: Math.random() * 2, onGround: false, health: 5, damageFlash: 0 };
+  animals.push(a);
+  return a;
+}
+
+const keys = {};
+window.addEventListener('keydown', (e) => {
+  keys[e.key.toLowerCase()] = true;
+  if (e.key === 'Escape') togglePause();
+  if (e.key.toLowerCase() === 'f') handleAttack();
+});
+window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+const touchState = { left: false, right: false, jump: false, attack: false };
+const tLeft = document.getElementById('tLeft');
+const tRight = document.getElementById('tRight');
+const tJump = document.getElementById('tJump');
+const tAttack = document.getElementById('tAttack');
+
+function touchDown(el, name) {
+  el.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    touchState[name] = true;
+    el.classList.add('pressed');
+    if (name === 'attack') handleAttack();
+  }, { passive: false });
+  el.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    touchState[name] = true;
+    el.classList.add('pressed');
+    if (name === 'attack') handleAttack();
+  });
+  const up = () => {
+    touchState[name] = false;
+    el.classList.remove('pressed');
+  };
+  window.addEventListener('touchend', up, { passive: true });
+  window.addEventListener('mouseup', up);
+}
+touchDown(tLeft, 'left');
+touchDown(tRight, 'right');
+touchDown(tJump, 'jump');
+touchDown(tAttack, 'attack');
+
+function handleAttack() {
+  const now = performance.now();
+  if (now - lastDamage < 500) return;
+  lastDamage = now;
+  const attackRange = TILE;
+  const playerMidX = player.x + player.width / 2;
+  const playerBottomY = player.y + player.height;
+  animals = animals.filter((a) => {
+    const aMidX = a.x + a.width / 2;
+    const aBottomY = a.y + a.height;
+    const distX = Math.abs(aMidX - playerMidX);
+    const distY = Math.abs(aBottomY - playerBottomY);
+    if (distX < attackRange && distY < attackRange && (a.type === 'zombie' || a.type === 'cow' || a.type === 'chicken' || a.type === 'pig' || a.type === 'sheep')) {
+      a.health -= 1;
+      a.damageFlash = 200;
+      a.vx = aMidX > playerMidX ? 200 : -200;
+      a.vy = -200;
+      a.onGround = false;
+      if (a.health <= 0) {
+        spawnParticles(a.x + a.width / 2, a.y + a.height / 2);
+        if (a.type === 'zombie' && player.health < 20) {
+          player.health = Math.min(20, player.health + 2);
+          updateHearts();
+        }
+      }
+      return a.health > 0;
+    }
+    return true;
+  });
+}
+
+function pxToTile(px) { return Math.floor(px / TILE); }
+function tileToPx(tx) { return tx * TILE; }
+function getBlockAtPixel(px, py) { return getBlock(pxToTile(px), Math.floor(py / TILE)); }
+
+function collisions(px, py, pw, ph) {
+  const hits = [];
+  const left = Math.floor(px / TILE), right = Math.floor((px + pw - 1) / TILE);
+  const top = Math.floor(py / TILE), bottom = Math.floor((py + ph - 1) / TILE);
+  for (let tx = left; tx <= right; tx++) {
+    for (let ty = top; ty <= bottom; ty++) {
+      const b = getBlock(tx, ty);
+      if (b && SOLID_BLOCKS.includes(b.type)) hits.push({ tx, ty, b });
+    }
+  }
+  return hits;
+}
+
+const startLobby = document.getElementById('startLobby');
+const startButton = document.getElementById('startButton');
+const settingsBtn = document.getElementById('settingsBtn');
+const quitLobbyBtn = document.getElementById('quitLobbyBtn');
+const timeHud = document.getElementById('timeHud');
+const coordsHud = document.getElementById('coordsHud');
+const pauseOverlay = document.getElementById('pauseOverlay');
+const resumeBtn = document.getElementById('resumeBtn');
+const quitToTitleBtn = document.getElementById('quitToTitleBtn');
+const gameEndOverlay = document.getElementById('gameEndOverlay');
+const restartBtn = document.getElementById('restartBtn');
+const quitToTitleEndBtn = document.getElementById('quitToTitleEndBtn');
+const settingsOverlay = document.getElementById('settingsOverlay');
+const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+const toggleTimeHud = document.getElementById('toggleTimeHud');
+const toggleCoordsHud = document.getElementById('toggleCoordsHud');
+
+startButton.addEventListener('click', startGame);
+settingsBtn.addEventListener('click', openSettings);
+quitLobbyBtn.addEventListener('click', quitToTitle);
+document.getElementById('pauseBtn').addEventListener('click', togglePause);
+resumeBtn.addEventListener('click', togglePause);
+quitToTitleBtn.addEventListener('click', quitToTitle);
+quitToTitleEndBtn.addEventListener('click', quitToTitle);
+restartBtn.addEventListener('click', restartGame);
+saveSettingsBtn.addEventListener('click', saveSettings);
+
+function openSettings() {
+  settingsOverlay.style.display = 'flex';
+  settingsOverlay.setAttribute('aria-hidden', 'false');
+  document.getElementById('gameWrap').classList.add('blur');
+}
+
+function saveSettings() {
+  timeHud.style.display = toggleTimeHud.checked ? 'block' : 'none';
+  coordsHud.style.display = toggleCoordsHud.checked ? 'block' : 'none';
+  settingsOverlay.style.display = 'none';
+  settingsOverlay.setAttribute('aria-hidden', 'true');
+  document.getElementById('gameWrap').classList.remove('blur');
+}
+
+function updateHearts() {
+  const heartsDiv = document.getElementById('hearts');
+  heartsDiv.innerHTML = '';
+  for (let i = 0; i < 10; i++) {
+    const hp = player.health - (i * 2);
+    let char = hp >= 2 ? '❤' : hp === 1 ? '♥' : '♡';
+    const span = document.createElement('span');
+    span.innerText = char;
+    span.style.color = hp > 0 ? '#A94442' : '#555';
+    heartsDiv.appendChild(span);
+  }
+}
+
+function populateBottomHud() {
+  updateHearts();
+}
+
+let spawnTimer = 0;
+function attemptZombieSpawn(isNight) {
+  if (!isNight) return;
+  const zombieCount = animals.filter(a => a.type === 'zombie').length;
+  if (zombieCount >= MAX_ZOMBIES) return;
+  if (Math.random() < 0.6) {
+    const playerTileX = pxToTile(player.x);
+    const spawnXOffset = 20 + Math.floor(Math.random() * 10);
+    const direction = Math.random() < 0.5 ? 1 : -1;
+    const targetTileX = playerTileX + (spawnXOffset * direction);
+    if (groundHeightMap.has(targetTileX)) {
+      spawnAnimalAtTile(targetTileX, 'zombie');
+    }
+  }
+}
+
+let gameStarted = false, gamePaused = false;
+let last = 0;
+let timeInCycle = 0;
+
+let particles = [];
+function spawnParticles(x, y) {
+  for (let i = 0; i < 20; i++) {
+    particles.push({
+      x: x,
+      y: y,
+      vx: (Math.random() - 0.5) * 200,
+      vy: -Math.random() * 400 - 100,
+      life: 1,
+      size: Math.random() * 4 + 2
+    });
+  }
+}
+
+function update(dt) {
+  timeInCycle = (timeInCycle + dt) % DAY_CYCLE_DURATION;
+  const cycleRatio = timeInCycle / DAY_CYCLE_DURATION;
+  const isNight = cycleRatio < 0.25 || cycleRatio > 0.75;
+
+  spawnTimer += dt;
+  if (spawnTimer >= ZOMBIE_SPAWN_INTERVAL) {
+    spawnTimer = 0;
+    attemptZombieSpawn(isNight);
+  }
+
+  const left = keys['arrowleft'] || keys['a'] || touchState.left;
+  const right = keys['arrowright'] || keys['d'] || touchState.right;
+  const wantJump = keys[' '] || keys['w'] || keys['arrowup'] || touchState.jump;
+
+  if (left && !right) { player.vx = -BASE_MOVE_SPEED; player.facing = -1; }
+  else if (right && !left) { player.vx = BASE_MOVE_SPEED; player.facing = 1; }
+  else {
+    player.vx *= 0.7;
+    if (Math.abs(player.vx) < 1) player.vx = 0;
+  }
+
+  player.vy += BASE_GRAVITY * dt;
+  if (wantJump && player.onGround) {
+    player.vy = -BASE_JUMP_SPEED;
+    player.onGround = false;
+  }
+
+  player.walkAnim += dt * (player.vx !== 0 ? 6 : 1);
+  player.damageFlash = Math.max(0, player.damageFlash - dt * 1000);
+
+  let nextX = player.x + player.vx * dt;
+  let nextY = player.y + player.vy * dt;
+  const pw = player.width, ph = player.height;
+
+  const horiz = collisions(nextX, player.y, pw, ph);
+  if (horiz.length) {
+    if (player.vx > 0) {
+      const minTx = Math.min(...horiz.map(h => h.tx));
+      nextX = tileToPx(minTx) - pw - 0.001;
+    } else if (player.vx < 0) {
+      const maxTx = Math.max(...horiz.map(h => h.tx));
+      nextX = tileToPx(maxTx + 1) + 0.001;
+    }
+    player.vx = 0;
+  }
+
+  const vert = collisions(nextX, nextY, pw, ph);
+  if (vert.length) {
+    if (player.vy > 0) {
+      const minTy = Math.min(...vert.map(h => h.ty));
+      nextY = tileToPx(minTy) - ph - 0.001;
+      player.vy = 0;
+      player.onGround = true;
+    } else if (player.vy < 0) {
+      const maxTy = Math.max(...vert.map(h => h.ty));
+      nextY = tileToPx(maxTy + 1) + 0.001;
+      player.vy = 0;
+    }
+  } else player.onGround = false;
+
+  player.x = nextX;
+  player.y = nextY;
+
+  const targetCam = player.x - W * 0.35;
+  cameraX += (targetCam - cameraX) * Math.min(8 * dt, 1);
+  const playerTileX = Math.floor(player.x / TILE);
+  const genRadius = Math.ceil(W / TILE) * 2;
+  const tMax = playerTileX + genRadius;
+  const tMin = playerTileX - genRadius;
+  if (tMax > maxGenX) generateChunk(maxGenX + 1, tMax - maxGenX);
+  if (tMin < minGenX) generateChunk(tMin, minGenX - tMin);
+  const vFirst = Math.floor(cameraX / TILE) - 6;
+  const vLast = Math.floor((cameraX + W) / TILE) + 6;
+  visibleBlocks = [];
+  for (const b of blockMap.values()) if (b.xTile >= vFirst && b.xTile <= vLast) visibleBlocks.push(b);
+
+  updateAnimals(dt, cycleRatio, isNight);
+
+  const now = performance.now();
+  for (const a of animals) {
+    if (a.type === 'zombie') {
+      const distX = Math.abs((a.x + a.width / 2) - (player.x + player.width / 2));
+      const distY = Math.abs((a.y + a.height) - (player.y + player.height));
+      if (distX < 24 && distY < 24 && now - lastDamage > 1000) {
+        player.health -= 2;
+        player.damageFlash = 200;
+        lastDamage = now;
+        updateHearts();
+        if (player.health <= 0) { gameEnd(); return; }
+      }
+    }
+  }
+
+  const cycleTime = timeInCycle / DAY_CYCLE_DURATION;
+  const hrs = Math.floor(cycleTime * 24);
+  const mins = Math.floor((cycleTime * 24 - hrs) * 60);
+  const ampm = hrs < 12 ? 'AM' : 'PM';
+  const showH = (hrs % 12) === 0 ? 12 : (hrs % 12);
+  document.getElementById('timeLabel').innerText = showH + ':' + (mins < 10 ? '0' + mins : mins) + ' ' + ampm;
+  const displayX = Math.floor(player.x / TILE);
+  const displayY = Math.floor((player.y + player.height) / TILE);
+  document.getElementById('coordsLabel').innerText = `X: ${displayX} | Y: ${displayY}`;
+
+  particles.forEach(p => {
+    p.vy += BASE_GRAVITY * dt * 0.2;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+  });
+  particles = particles.filter(p => p.life > 0);
+}
+
+function updateAnimals(dt, cycleRatio, isNight) {
+  const dayness = Math.max(0, Math.sin((cycleRatio * Math.PI * 2) - Math.PI / 2) * 0.5 + 0.5);
+  animals = animals.filter(a => {
+    if (a.type === 'zombie' && !isNight && dayness > 0.6) return false;
+    return a.x > cameraX - W * 2 && a.x < cameraX + W * 3;
+  });
+
+  const playerMidX = player.x + player.width / 2;
+  const ANIMAL_MOVE_SPEED = 30;
+
+  for (const a of animals) {
+    a.idle -= dt;
+    a.walkAnim += dt * (a.vx !== 0 ? 6 : 1);
+    a.damageFlash = Math.max(0, a.damageFlash - dt * 1000);
+    let targetVX = 0;
+
+    if (a.type === 'zombie' && isNight) {
+      const dx = playerMidX - (a.x + a.width / 2);
+      const dist = Math.abs(dx);
+      const shouldChase = dist < W * 0.7;
+      if (shouldChase) {
+        a.facing = dx > 0 ? 1 : -1;
+        targetVX = ANIMAL_MOVE_SPEED * 2.5 * a.facing;
+        a.idle = 0.5;
+      } else {
+        targetVX = a.vx * 0.7;
+      }
+    } else {
+      if (a.idle <= 0) {
+        a.idle = 1 + Math.random() * 3;
+        const r = Math.random();
+        if (r < 0.4) targetVX = 0;
+        else if (r < 0.95) { a.facing = Math.random() < 0.5 ? -1 : 1; targetVX = ANIMAL_MOVE_SPEED * a.facing; }
+        else if (a.onGround) a.vy = -BASE_JUMP_SPEED;
+      }
+      targetVX = a.vx + (targetVX - a.vx) * dt * 5;
+    }
+
+    a.vx = targetVX;
+    a.vy += BASE_GRAVITY * dt;
+    let nx = a.x + a.vx * dt;
+    let ny = a.y + a.vy * dt;
+
+    if (a.onGround && a.vx !== 0 && a.vy >= 0) {
+      const lookX = a.x + a.facing * (a.width / 2 + 2);
+      const groundY = a.y + a.height;
+      const blockInFront = getBlockAtPixel(lookX, groundY - 1);
+      const blockOneUp = getBlockAtPixel(lookX, groundY - TILE - 1);
+      const blockCliff = getBlockAtPixel(lookX, groundY + 2);
+      if (blockInFront && SOLID_BLOCKS.includes(blockInFront.type) && !(blockOneUp && SOLID_BLOCKS.includes(blockOneUp.type))) {
+        a.vy = -BASE_JUMP_SPEED;
+        a.onGround = false;
+      } else if (a.type !== 'zombie' && !(blockCliff && SOLID_BLOCKS.includes(blockCliff.type))) {
+        a.vx = 0; a.facing *= -1; a.idle = 0.5;
+      }
+    }
+
+    const hh = collisions(nx, a.y, a.width, a.height);
+    if (hh.length) { a.vx = 0; nx = a.x; }
+    const vv = collisions(nx, ny, a.width, a.height);
+    if (vv.length) {
+      if (a.vy > 0) { const minTy = Math.min(...vv.map(h => h.ty)); ny = tileToPx(minTy) - a.height - 0.001; a.vy = 0; a.onGround = true; }
+      else { const maxTy = Math.max(...vv.map(h => h.ty)); ny = tileToPx(maxTy + 1) + 0.001; a.vy = 0; }
+    } else a.onGround = false;
+
+    a.x = nx; a.y = ny;
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  const cycleRatio = timeInCycle / DAY_CYCLE_DURATION;
+  const dayness = Math.max(0, Math.sin((cycleRatio * Math.PI * 2) - Math.PI / 2) * 0.5 + 0.5);
+  drawSky(dayness);
+  drawSunMoon(cycleRatio);
+  drawBlocks();
+  drawAnimals();
+  drawPlayer();
+  drawParticles();
+}
+
+function drawSky(dayness) {
+  const dayTop = [126, 192, 255], dayBottom = [235, 247, 255];
+  const nightTop = [20, 30, 60], nightBottom = [40, 50, 90];
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const t = dayness;
+  const top = [Math.round(lerp(nightTop[0], dayTop[0], t)), Math.round(lerp(nightTop[1], dayTop[1], t)), Math.round(lerp(nightTop[2], dayTop[2], t))];
+  const bottom = [Math.round(lerp(nightBottom[0], dayBottom[0], t)), Math.round(lerp(nightBottom[1], dayBottom[1], t)), Math.round(lerp(nightBottom[2], dayBottom[2], t))];
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height / DPR);
+  grad.addColorStop(0, `rgb(${top[0]},${top[1]},${top[2]})`);
+  grad.addColorStop(1, `rgb(${bottom[0]},${bottom[1]},${bottom[2]})`);
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width / DPR, canvas.height / DPR);
+  if (dayness < 0.25) {
+    const starCount = 60;
+    ctx.fillStyle = 'white';
+    for (let i = 0; i < starCount; i++) {
+      const x = (Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1) * (canvas.width / DPR);
+      const y = (Math.abs(Math.cos(i * 7.123) * 12345.678) % 1) * (canvas.height / DPR) * 0.45;
+      if (Math.random() < 0.3) ctx.fillRect(x, y, 1, 1);
+    }
+  }
+}
+
+function drawSunMoon(cycleRatio) {
+  const angle = (cycleRatio * Math.PI * 2) - Math.PI / 2;
+  const cx = (canvas.width / DPR) / 2, cy = (canvas.height / DPR) * 0.8, r = Math.min(canvas.width / DPR, canvas.height / DPR) * 0.6;
+  const ox = cx + Math.cos(angle) * r;
+  const oy = cy + Math.sin(angle) * r;
+  if (cycleRatio < 0.5) {
+    const sunR = 34; ctx.fillStyle = '#ffde4d'; ctx.beginPath(); ctx.arc(ox, oy, sunR, 0, Math.PI * 2); ctx.fill();
+  } else {
+    const moonR = 28; ctx.fillStyle = '#f5f6f8'; ctx.beginPath(); ctx.arc(ox, oy, moonR, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(20,30,60,1)'; ctx.beginPath(); ctx.arc(ox + 10, oy - 6, moonR, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawBlocks() {
+  const drawW = canvas.width / DPR, drawH = canvas.height / DPR;
+  for (const b of visibleBlocks) {
+    const x = b.xTile * TILE - cameraX;
+    const y = b.yTile * TILE;
+    const tex = textures[b.type] || textures['stone'];
+    ctx.drawImage(tex, x, y, TILE, TILE);
+  }
+}
+
+function drawAnimals() {
+  for (const a of animals) {
+    const ax = a.x - cameraX, ay = a.y;
+    ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.beginPath(); ctx.ellipse(ax + a.width / 2, ay + a.height + 6, 14, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    let sprite, sw, sh, scaleY;
+    if (a.type === 'zombie') {
+      sprite = makeSwingingSprite(zombieSprite, a.walkAnim, true);
+      sw = 16; sh = 32; scaleY = 1.6;
+      ctx.translate(ax + (a.facing === -1 ? sw * 1.6 : 0), ay);
+      if (a.facing === -1) ctx.scale(-1, 1);
+      ctx.drawImage(sprite, 0, 0, sw, sh, 0, 0, sw * 1.6, sh * 1.6);
+    } else if (a.type === 'cow') {
+      sprite = cowSprite;
+      sw = 24; sh = 18; scaleY = 1.5;
+      ctx.translate(ax + (a.facing === -1 ? sw * 1.6 : 0), ay + a.height - sh * scaleY);
+      if (a.facing === -1) ctx.scale(-1, 1);
+      ctx.drawImage(sprite, 0, 0, sw, sh, 0, 0, sw * 1.6, sh * scaleY);
+    } else if (a.type === 'chicken') {
+      sprite = chickenSprite;
+      sw = 16; sh = 16; scaleY = 1.5;
+      ctx.translate(ax + (a.facing === -1 ? sw * 1.5 : 0), ay + a.height - sh * scaleY);
+      if (a.facing === -1) ctx.scale(-1, 1);
+      ctx.drawImage(sprite, 0, 0, sw, sh, 0, 0, sw * 1.5, sh * scaleY);
+    } else if (a.type === 'pig') {
+      sprite = pigSprite;
+      sw = 24; sh = 18; scaleY = 1.5;
+      ctx.translate(ax + (a.facing === -1 ? sw * 1.6 : 0), ay + a.height - sh * scaleY);
+      if (a.facing === -1) ctx.scale(-1, 1);
+      ctx.drawImage(sprite, 0, 0, sw, sh, 0, 0, sw * 1.6, sh * scaleY);
+    } else if (a.type === 'sheep') {
+      sprite = sheepSprite;
+      sw = 24; sh = 18; scaleY = 1.5;
+      ctx.translate(ax + (a.facing === -1 ? sw * 1.6 : 0), ay + a.height - sh * scaleY);
+      if (a.facing === -1) ctx.scale(-1, 1);
+      ctx.drawImage(sprite, 0, 0, sw, sh, 0, 0, sw * 1.6, sh * scaleY);
+    }
+    if (a.damageFlash > 0) {
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.fillStyle = `rgba(255,0,0,${0.6 * Math.sin(a.damageFlash * Math.PI / 200)})`;
+      ctx.fillRect(0, 0, sw * (a.type === 'chicken' ? 1.5 : 1.6), sh * scaleY);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    ctx.restore();
+  }
+}
+
+function drawPlayer() {
+  const px = player.x - cameraX, py = player.y;
+  ctx.fillStyle = 'rgba(0,0,0,0.16)'; ctx.beginPath(); ctx.ellipse(px + player.width / 2, py + player.height + 6, 18, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.save();
+  const sw = 16, sh = 32;
+  const sprite = makeSwingingSprite(playerSprite, player.walkAnim, false);
+  ctx.translate(px + (player.facing === -1 ? sw * 1.6 : 0), py);
+  if (player.facing === -1) ctx.scale(-1, 1);
+  ctx.drawImage(sprite, 0, 0, sw, sh, 0, 0, sw * 1.6, sh * 1.6);
+  if (player.damageFlash > 0) {
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = `rgba(255,0,0,${0.6 * Math.sin(player.damageFlash * Math.PI / 200)})`;
+    ctx.fillRect(0, 0, sw * 1.6, sh * 1.6);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  ctx.restore();
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    ctx.fillStyle = `rgba(255,255,255,${p.life * 0.5})`;
+    ctx.beginPath();
+    ctx.arc(p.x - cameraX, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function loop(now) {
+  if (!gameStarted || gamePaused) return;
+  if (!last) last = now;
+  const dt = Math.min((now - last) / 1000, 1 / 12);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+generateChunk(-40, 160);
+placePlayerOnSurface();
+visibleBlocks = [];
+for (const v of blockMap.values()) visibleBlocks.push(v);
+draw();
+
+canvas.addEventListener('mousedown', () => canvas.focus());
+canvas.addEventListener('touchstart', () => canvas.focus(), { passive: true });
+
+window.__craft2d = { player, blockMap, animals, desertLimitX };
+
+function startGame() {
+  startLobby.style.display = 'none';
+  startLobby.setAttribute('aria-hidden', 'true');
+  gameStarted = true;
+  gamePaused = false;
+  const pxTile = Math.floor(player.x / TILE);
+  const initial = Math.ceil(W / TILE) * 4;
+  generateChunk(pxTile - initial / 2, initial);
+  placePlayerOnSurface();
+  player.health = 20;
+  player.walkAnim = 0;
+  animals = [];
+  for (let x = pxTile - initial; x <= pxTile + initial; x += Math.floor(Math.random() * 20 + 15)) {
+    if (groundHeightMap.has(x) && Math.random() < 0.8) {
+      if (x < DESERT_START_X || x >= desertLimitX) {
+        const r = Math.random();
+        if (r < 0.25) spawnAnimalAtTile(x, 'cow');
+        else if (r < 0.5) spawnAnimalAtTile(x, 'chicken');
+        else if (r < 0.75) spawnAnimalAtTile(x, 'pig');
+        else spawnAnimalAtTile(x, 'sheep');
+      }
+    }
+  }
+  if (isMobile()) document.getElementById('touchControls').style.display = 'flex';
+  timeHud.style.display = toggleTimeHud.checked ? 'block' : 'none';
+  coordsHud.style.display = toggleCoordsHud.checked ? 'block' : 'none';
+  populateBottomHud();
+  last = performance.now();
+  requestAnimationFrame(loop);
+}
+
+function togglePause() {
+  if (!gameStarted) return;
+  gamePaused = !gamePaused;
+  const gameWrap = document.getElementById('gameWrap');
+  if (gamePaused) {
+    gameWrap.classList.add('blur');
+    pauseOverlay.style.display = 'flex';
+    pauseOverlay.setAttribute('aria-hidden', 'false');
+  } else {
+    gameWrap.classList.remove('blur');
+    pauseOverlay.style.display = 'none';
+    pauseOverlay.setAttribute('aria-hidden', 'true');
+    last = performance.now();
+    requestAnimationFrame(loop);
+  }
+}
+
+function gameEnd() {
+  gamePaused = true;
+  document.getElementById('gameWrap').classList.add('blur');
+  gameEndOverlay.style.display = 'flex';
+  gameEndOverlay.setAttribute('aria-hidden', 'false');
+}
+
+function restartGame() {
+  document.getElementById('gameWrap').classList.remove('blur');
+  gameEndOverlay.style.display = 'none';
+  gameEndOverlay.setAttribute('aria-hidden', 'true');
+  player.health = 20;
+  player.x = 160;
+  player.vx = 0; player.vy = 0;
+  player.walkAnim = 0;
+  placePlayerOnSurface();
+  updateHearts();
+  animals = animals.map(a => ({ ...a, health: 5, damageFlash: 0 }));
+  gamePaused = false;
+  last = performance.now();
+  requestAnimationFrame(loop);
+}
+
+function quitToTitle() {
+  document.getElementById('gameWrap').classList.remove('blur');
+  pauseOverlay.style.display = 'none';
+  gameEndOverlay.style.display = 'none';
+  settingsOverlay.style.display = 'none';
+  startLobby.style.display = 'flex';
+  startLobby.setAttribute('aria-hidden', 'false');
+  blockMap.clear();
+  groundHeightMap.clear();
+  animals = [];
+  visibleBlocks = [];
+  maxGenX = 0; minGenX = 0;
+  desertLimitX = DESERT_START_X + DESERT_MIN_LENGTH + Math.floor(Math.random() * (DESERT_MAX_LENGTH - DESERT_MIN_LENGTH + 1));
+  gameStarted = false; gamePaused = false;
+  player.x = 160; player.vx = 0; player.vy = 0; player.health = 20; player.walkAnim = 0;
+  placePlayerOnSurface();
+  timeHud.style.display = 'none';
+  coordsHud.style.display = 'none';
+  document.getElementById('touchControls').style.display = 'none';
+  draw();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'p') togglePause();
+});
+
+populateBottomHud();
+updateHearts();
+
+document.body.addEventListener('touchmove', (e) => {
+  if (e.target.closest('.touchControls')) e.preventDefault();
+}, { passive: false });
+</script>
+</body>
+</html>
